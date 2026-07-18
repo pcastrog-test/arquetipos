@@ -1,0 +1,72 @@
+Arquetipos de Marca — herramienta docente
+Copyright (c) 2026 Patricio Castro Guzmán — Universidad Adolfo Ibáñez
+
+Esta obra está licenciada bajo
+Creative Commons Atribución-NoComercial-CompartirIgual 4.0 Internacional
+(CC BY-NC-SA 4.0)
+
+Texto legal completo:
+https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode.es
+Resumen para humanos:
+https://creativecommons.org/licenses/by-nc-sa/4.0/deed.es
+
+────────────────────────────────────────────────────────────
+USTED ES LIBRE DE:
+
+  Compartir — copiar y redistribuir el material en cualquier medio o formato.
+  Adaptar   — remezclar, transformar y construir a partir del material.
+
+BAJO LOS SIGUIENTES TÉRMINOS:
+
+  Atribución (BY)
+    Debe dar crédito de manera adecuada, brindar un enlace a la licencia e
+    indicar si se han realizado cambios.
+
+  NoComercial (NC)
+    No puede hacer uso del material con propósitos comerciales.
+
+  CompartirIgual (SA)
+    Si remezcla, transforma o crea a partir del material, debe distribuir su
+    contribución bajo la misma licencia del original.
+
+────────────────────────────────────────────────────────────
+CITA SUGERIDA
+
+Castro, P. (2026). Arquetipos de Marca: herramienta docente para la
+construcción de arquetipos de marca [aplicación web]. Universidad Adolfo
+Ibáñez. https://arquetipos.kimeltun.app
+
+────────────────────────────────────────────────────────────
+ALCANCE Y EXCEPCIONES
+
+La licencia CC BY-NC-SA 4.0 cubre el código de la aplicación, la redacción,
+la estructura pedagógica y las ilustraciones de los doce arquetipos generadas
+con IA para este proyecto.
+
+NO cubre, y se excluye expresamente de esta licencia:
+
+1. El marco conceptual de los doce arquetipos de marca, desarrollado por
+   Margaret Mark y Carol S. Pearson en "The Hero and the Outlaw: Building
+   Extraordinary Brands Through the Power of Archetypes" (McGraw-Hill, 2001),
+   y por Carol S. Pearson en obras anteriores. Esta aplicación es una
+   herramienta docente derivada que cita dicho marco; los derechos sobre la
+   obra original pertenecen a sus autoras y editorial.
+
+2. Las marcas comerciales mencionadas a título ilustrativo, que pertenecen a
+   sus respectivos titulares y se citan al amparo del uso legítimo con fines
+   educativos y de comentario.
+
+3. Las tipografías (Playfair Display, Poppins) y librerías de terceros
+   (React, Tailwind CSS, jsPDF, html2canvas), sujetas a sus propias licencias.
+
+────────────────────────────────────────────────────────────
+PRIVACIDAD
+
+La aplicación funciona íntegramente en el navegador. No recoge, almacena ni
+transmite datos personales de quienes la utilizan.
+
+────────────────────────────────────────────────────────────
+SIN GARANTÍAS
+
+El material se ofrece "tal cual", sin garantías de ningún tipo. El autor no
+será responsable por daños derivados de su uso.

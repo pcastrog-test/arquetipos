@@ -1,0 +1,1987 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arquetipos de Marca — Constructor</title>
+  <meta name="description" content="App educativa para descubrir el arquetipo de tu marca, basada en Mark & Pearson (2001), The Hero and the Outlaw." />
+
+  <!-- ===== CDNs ===== -->
+  <!-- React 18 + ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <!-- Babel Standalone (JSX en el navegador) -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Tipografías: Playfair Display (titulares) + Poppins (cuerpo/UI) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    /* ===== Design tokens: se remapea la paleta de Tailwind =====
+       indigo → amarillo mostaza (acento único)
+       slate  → neutros cálidos casi blancos
+       Así todas las clases existentes adoptan el nuevo estilo
+       sin tener que reescribir cada componente. */
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            indigo: {
+              50:  "#FEF8E7", 100: "#FDF3D9", 200: "#FBE7AF", 300: "#F8D882",
+              400: "#F6CD63", 500: "#F4C245", 600: "#F4C245", 700: "#E3AE24",
+              800: "#6B5310", 900: "#4A3908",
+            },
+            slate: {
+              50:  "#FBFBFC", 100: "#F4F5F7", 200: "#E6E6EA", 300: "#D6D6DC",
+              400: "#8E8E96", 500: "#6E6E75", 600: "#5A5A61", 700: "#45454C",
+              800: "#33333A", 900: "#2B2B2B",
+            },
+            amber: {
+              50:  "#FEF8E7", 200: "#FBE7AF", 800: "#6B5310", 900: "#4A3908",
+            },
+            rose: { 50: "#FDF2F2", 200: "#F6D5D5", 500: "#D2685C", 600: "#C25A4E", 900: "#7A3229" },
+          },
+          fontFamily: {
+            sans:  ["Poppins", "ui-sans-serif", "system-ui", "sans-serif"],
+            serif: ['"Playfair Display"', "Georgia", "serif"],
+          },
+        },
+      },
+    };
+  </script>
+  <!-- html2canvas (export PNG) — se usa en Iteración 5 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- jsPDF (export PDF) — se usa en Iteración 5 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <style>
+    /* =========================================================
+       SISTEMA VISUAL
+       Referencia: plantilla "Personal Portfolio" (Andressa Belém,
+       Figma Community, CC BY 4.0) — amarillo mostaza como acento
+       único, formas orgánicas, serif de alto contraste + sans
+       geométrica, mucho aire y sombras difusas.
+       ========================================================= */
+    :root{
+      --yellow:      #F4C245;   /* acento principal */
+      --yellow-dark: #E3AE24;   /* hover */
+      --yellow-soft: #FDF3D9;   /* fondo suave del acento */
+      --ink:         #2B2B2B;   /* texto principal */
+      --muted:       #6E6E75;   /* texto secundario (4.9:1 sobre el fondo → AA) */
+      --amber-text:  #8A6508;   /* ámbar oscuro para texto de acento (5.2:1 → AA) */
+      --bg:          #FBFBFC;   /* fondo general */
+      --panel:       #F4F5F7;   /* gris muy claro */
+      --line:        #E6E6EA;   /* bordes */
+    }
+
+    /* Tipografía: Poppins Light para el cuerpo, Playfair para titulares */
+    body { font-family: "Poppins", ui-sans-serif, system-ui, sans-serif; font-weight: 300; line-height: 1.7; }
+    h1, h2, h3, .font-serif { font-family: "Playfair Display", Georgia, serif; line-height: 1.15; }
+    h1, h2 { letter-spacing: -0.01em; }
+    /* En pantallas grandes (proyección en clase), sube la base tipográfica */
+    @media (min-width: 1024px) { html { font-size: 17px; } }
+
+    /* ===== Contraste: sobre amarillo el texto SIEMPRE va oscuro =====
+       (blanco sobre #F4C245 da ~1.7:1 → incumple WCAG AA;
+        #2B2B2B sobre #F4C245 da ~9.6:1 → cumple AAA) */
+    .bg-indigo-600, .bg-indigo-500, .bg-indigo-700,
+    .bg-indigo-600 *, .bg-indigo-500 *, .bg-indigo-700 * { color: var(--ink) !important; }
+
+    /* ===== Formas más redondeadas y sombras difusas ===== */
+    .rounded-xl  { border-radius: 14px !important; }
+    .rounded-2xl { border-radius: 20px !important; }
+    .rounded-3xl { border-radius: 26px !important; }
+    .shadow-sm { box-shadow: 0 4px 18px -10px rgba(30,30,40,.16) !important; }
+    .shadow-md { box-shadow: 0 12px 30px -16px rgba(30,30,40,.22) !important; }
+    .shadow-lg { box-shadow: 0 20px 46px -22px rgba(30,30,40,.26) !important; }
+    .shadow-xl { box-shadow: 0 30px 66px -28px rgba(30,30,40,.32) !important; }
+
+    /* ===== Botones: elevación al pasar el mouse (como la referencia) ===== */
+    button:not(:disabled) { transition: transform .22s ease, box-shadow .22s ease, background-color .22s ease, border-color .22s ease; }
+    button.bg-indigo-600:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 12px 26px -10px rgba(244,194,69,.85) !important; }
+
+    /* ===== Campos de formulario ===== */
+    input, textarea, select { font-family: "Poppins", sans-serif; font-weight: 300; }
+    input::placeholder, textarea::placeholder { color: #B9B9C0; }
+
+    /* ===== "Eyebrow": etiqueta pequeña en mayúsculas sobre los títulos ===== */
+    .eyebrow{
+      font-family: "Poppins", sans-serif; font-weight: 600; font-size: 13px;
+      letter-spacing: .09em; text-transform: uppercase; color: var(--amber-text);
+    }
+
+    /* ===== Blob orgánico decorativo del hero ===== */
+    .hero-shell{ position:relative; }
+    .hero-shell > *:not(.blob-deco){ position:relative; z-index:1; }
+    .blob-deco{ position:absolute !important; z-index:0; pointer-events:none; }
+
+    /* ===== Máscara orgánica para las imágenes de arquetipo =====
+       border-radius asimétrico → forma de "blob" sin depender de SVG.
+       Funciona igual con foto (.jpg/.png) que con ilustración (.svg). */
+    .arch-blob{
+      border-radius: 58% 42% 47% 53% / 45% 40% 60% 55% !important;
+      object-fit: cover;
+      overflow: hidden;
+      transition: border-radius .8s ease, transform .4s ease;
+    }
+    .arch-blob:hover{
+      border-radius: 44% 56% 60% 40% / 55% 52% 48% 45% !important;
+      transform: scale(1.04);
+    }
+
+    /* ===== Animaciones lúdicas ===== */
+    /* Punto de la marca en el mapa: se mueve suave al responder */
+    .brand-dot { transition: transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+    /* Carta coleccionable con flip 3D */
+    .card-scene { perspective: 1200px; }
+    .card-flip { position: relative; transform-style: preserve-3d; transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1); }
+    .card-flip.flipped { transform: rotateY(180deg); }
+    .card-face { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+    .card-back { position: absolute; inset: 0; transform: rotateY(180deg); }
+
+    /* Suspenso: aparición escalonada */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-up { animation: fadeUp 0.6s ease-out both; }
+    @keyframes pulseSoft { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
+    .pulse-soft { animation: pulseSoft 1.2s ease-in-out infinite; }
+
+    /* Easter eggs: partículas temáticas que caen */
+    @keyframes particleFall {
+      0%   { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(105vh) rotate(720deg); opacity: 0; }
+    }
+    .particle { position: fixed; top: 0; z-index: 60; pointer-events: none; animation: particleFall linear forwards; }
+
+    /* Brillo del cuadrante activo en el mapa */
+    .quad-glow { transition: opacity 0.7s ease; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800" style="background-color:#FBFBFC">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    /* =========================================================
+       DATOS (se completan en Iteración 2)
+       ARCHETYPES  → 12 arquetipos según Doc 1 §3.3 y §4
+       QUESTIONS   → 14 preguntas-escenario con pesos por eje (Doc 2 §6)
+       COMPANY_FIELDS → paso "Tu empresa" (reemplaza al mapa de empatía)
+       ========================================================= */
+    /* ---------------------------------------------------------
+       ARCHETYPES — los 12 arquetipos de Mark & Pearson (2001)
+       · motto: verificado contra el PDF del libro (página indicada)
+       · cuadrante: índice del libro, pp. v–vi
+       · deseoCentral, estrategiaBranding, industrias, marcaReferencia,
+         tonoDeVoz: Iconic Fox, "Brand Archetypes: The Definitive Guide"
+       · meta / miedo / estrategia: atributos canónicos de Mark & Pearson
+       · ejes: convención → pertenencia: + = Pertenencia, − = Independencia
+                            estabilidad: + = Estabilidad/Control, − = Riesgo/Maestría
+                            (rango −2..+2, posición aproximada)
+       --------------------------------------------------------- */
+    const ARCHETYPES = [
+      {
+        id: "innocent",
+        nombre: "Inocente",
+        nombreBreve: "Inocente",
+        nombreEN: "The Innocent",
+        cuadrante: "El anhelo del paraíso",
+        ejes: { pertenencia: -1, estabilidad: 1 },
+        deseoCentral: "Seguridad",
+        motto: "Free to be you and me.", // libro p.70
+        meta: "Ser feliz",
+        miedo: "Hacer algo malo o incorrecto y ser castigado por ello",
+        estrategia: "Hacer las cosas bien",
+        estrategiaBranding: "Comunica con honestidad y optimismo; asocia la marca a seguridad, pureza y simplicidad. Evita el cinismo y la culpa.",
+        tonoDeVoz: ["Optimista", "Simple", "Honesto"],
+        ejemploFrase: "Lo bueno, simple y de verdad.",
+        paletaColor: ["#7EC8E3", "#FFFFFF", "#F7F4EA"],
+        industrias: ["Alimentos y bebidas naturales", "Cuidado personal", "Productos de limpieza", "Productos para bebés"],
+        marcaReferencia: "Coca-Cola / Dove",
+        sombra: "Ingenuidad; negar los problemas; volverse aburrido o predecible",
+        color: "#1D6F9E" /* AA sobre blanco */
+      },
+      {
+        id: "explorer",
+        nombre: "Explorador / Exploradora",
+        nombreBreve: "Explorador/a",
+        nombreEN: "The Explorer",
+        cuadrante: "El anhelo del paraíso",
+        ejes: { pertenencia: -2, estabilidad: -1 },
+        deseoCentral: "Libertad",
+        motto: "Don't Fence Me In.", // libro p.88
+        meta: "Experimentar una vida mejor, más auténtica y plena",
+        miedo: "Quedar atrapado, conformarse, el vacío interior",
+        estrategia: "Viajar, buscar y experimentar cosas nuevas, escapar del aburrimiento",
+        estrategiaBranding: "Desafía a la audiencia a descubrir lo nuevo; posiciona la marca como compañera del viaje y de la vida auténtica.",
+        tonoDeVoz: ["Aventurero", "Auténtico", "Inspirador"],
+        ejemploFrase: "El camino se hace andando.",
+        paletaColor: ["#2E7D32", "#8D6E63", "#F5F0E1"],
+        industrias: ["Outdoor y aventura", "Viajes y turismo", "Vehículos 4x4", "Ropa técnica"],
+        marcaReferencia: "Jeep / The North Face",
+        sombra: "Vagar sin rumbo; individualismo excesivo; no comprometerse",
+        color: "#2E7D32"
+      },
+      {
+        id: "sage",
+        nombre: "Sabio / Sabia",
+        nombreBreve: "Sabio/a",
+        nombreEN: "The Sage",
+        cuadrante: "El anhelo del paraíso",
+        ejes: { pertenencia: -2, estabilidad: 0 },
+        deseoCentral: "Comprensión",
+        motto: "The truth will set you free.", // libro p.105
+        meta: "Usar la inteligencia y el análisis para entender el mundo",
+        miedo: "Ser engañado; la ignorancia",
+        estrategia: "Buscar información y conocimiento; la autorreflexión",
+        estrategiaBranding: "Aporta conocimiento y evidencia; posiciona la marca como fuente experta que ayuda a entender mejor el mundo.",
+        tonoDeVoz: ["Claro", "Experto", "Reflexivo"],
+        ejemploFrase: "Entiende antes de decidir.",
+        paletaColor: ["#1E5AA8", "#4A4A4A", "#EAF1F8"],
+        industrias: ["Educación", "Medios y noticias", "Buscadores y tecnología", "Consultoría"],
+        marcaReferencia: "Google / BBC",
+        sombra: "Parálisis por análisis; dogmatismo; frialdad distante",
+        color: "#1E5AA8"
+      },
+      {
+        id: "hero",
+        nombre: "Héroe / Heroína",
+        nombreBreve: "Héroe/Heroína",
+        nombreEN: "The Hero",
+        cuadrante: "Dejar huella en el mundo",
+        ejes: { pertenencia: -1, estabilidad: -2 },
+        deseoCentral: "Maestría",
+        motto: "Where there's a will, there's a way.", // libro p.122
+        meta: "Demostrar la propia valía a través de actos de coraje",
+        miedo: "La debilidad, la vulnerabilidad, rendirse",
+        estrategia: "Volverse tan fuerte, competente y poderoso como sea posible",
+        estrategiaBranding: "Inspira superación y triunfo; muestra a la marca (y al cliente) venciendo desafíos que otros no se atreven a enfrentar.",
+        tonoDeVoz: ["Valiente", "Directo", "Motivador"],
+        ejemploFrase: "Hecho para superarte.",
+        paletaColor: ["#1A1A1A", "#E4002B", "#FFFFFF"],
+        industrias: ["Deporte", "Automotriz de alto rendimiento", "Equipamiento y herramientas"],
+        marcaReferencia: "Nike",
+        sombra: "Arrogancia; necesitar siempre un enemigo o una batalla",
+        color: "#E4002B"
+      },
+      {
+        id: "outlaw",
+        nombre: "Forajido / Forajida",
+        nombreBreve: "Forajido/a",
+        nombreEN: "The Outlaw",
+        cuadrante: "Dejar huella en el mundo",
+        ejes: { pertenencia: -2, estabilidad: -2 },
+        deseoCentral: "Liberación",
+        motto: "Rules are meant to be broken.", // libro p.140
+        meta: "Destruir lo que no funciona, para la marca o para el cliente",
+        miedo: "Ser impotente o insignificante",
+        estrategia: "Romper, conmocionar o alterar el orden establecido",
+        estrategiaBranding: "Cuestiona el status quo; habla al deseo de romper con lo convencional y actúa como agente del cambio.",
+        tonoDeVoz: ["Provocador", "Irreverente", "Rebelde"],
+        ejemploFrase: "Las reglas no se hicieron para ti.",
+        paletaColor: ["#111111", "#E65100", "#757575"],
+        industrias: ["Motocicletas", "Bebidas energéticas y alcohol", "Moda alternativa"],
+        marcaReferencia: "Harley-Davidson",
+        sombra: "Cruzar al lado destructivo o criminal; quedar fuera del mercado",
+        color: "#BF4000" /* AA sobre blanco */
+      },
+      {
+        id: "magician",
+        nombre: "Mago / Maga",
+        nombreBreve: "Mago/a",
+        nombreEN: "The Magician",
+        cuadrante: "Dejar huella en el mundo",
+        ejes: { pertenencia: 0, estabilidad: -2 },
+        deseoCentral: "Poder",
+        motto: "It can happen!", // libro p.157
+        meta: "Hacer que los sueños se vuelvan realidad",
+        miedo: "Consecuencias negativas inesperadas",
+        estrategia: "Desarrollar una visión y vivir conforme a ella",
+        estrategiaBranding: "Promete transformación; muestra momentos 'mágicos' donde la visión se vuelve realidad.",
+        tonoDeVoz: ["Visionario", "Carismático", "Transformador"],
+        ejemploFrase: "Haz que suceda.",
+        paletaColor: ["#6A0DAD", "#2C1A4D", "#C9B1FF"],
+        industrias: ["Entretenimiento", "Belleza y transformación", "Tecnología", "Bienestar"],
+        marcaReferencia: "Disney",
+        sombra: "Manipulación; prometer lo que no se puede cumplir",
+        color: "#6A0DAD"
+      },
+      {
+        id: "regular",
+        nombre: "Persona Común",
+        nombreBreve: "Persona Común",
+        nombreEN: "The Regular Guy/Gal",
+        cuadrante: "Nadie es una isla",
+        ejes: { pertenencia: 2, estabilidad: 1 },
+        deseoCentral: "Pertenencia",
+        motto: "All men and women are created equal.", // libro p.182
+        meta: "Pertenecer, encajar",
+        miedo: "Sobresalir demasiado, parecer arrogante y ser rechazado",
+        estrategia: "Desarrollar virtudes comunes y sólidas; mezclarse con la gente",
+        estrategiaBranding: "Sé accesible y sin pretensiones; habla como la gente común y evita todo elitismo.",
+        tonoDeVoz: ["Cercano", "Sencillo", "Confiable"],
+        ejemploFrase: "Para gente como tú.",
+        paletaColor: ["#4E6E81", "#C9B79C", "#F4F1EC"],
+        industrias: ["Retail masivo", "Muebles y hogar", "Comida casual", "Marcas de buen precio"],
+        marcaReferencia: "The Gap / IKEA",
+        sombra: "Perder identidad propia; mimetizarse hasta volverse invisible",
+        color: "#4E6E81"
+      },
+      {
+        id: "lover",
+        nombre: "Amante",
+        nombreBreve: "Amante",
+        nombreEN: "The Lover",
+        cuadrante: "Nadie es una isla",
+        ejes: { pertenencia: 2, estabilidad: 0 },
+        deseoCentral: "Intimidad",
+        motto: "I only have eyes for you.", // libro p.195
+        meta: "Estar en relación con las personas y experiencias que ama",
+        miedo: "Estar solo; no ser amado ni deseado",
+        estrategia: "Volverse cada vez más atractivo, física y emocionalmente",
+        estrategiaBranding: "Apela a los sentidos y a la emoción; haz que el cliente se sienta deseado y especial.",
+        tonoDeVoz: ["Sensual", "Cálido", "Apasionado"],
+        ejemploFrase: "Déjate llevar.",
+        paletaColor: ["#C2185B", "#8E0038", "#F8E1E7"],
+        industrias: ["Cosmética y perfumes", "Chocolates y vinos", "Moda", "Joyería"],
+        marcaReferencia: "Alfa Romeo / Chanel",
+        sombra: "Complacencia; superficialidad; objetivación",
+        color: "#C2185B"
+      },
+      {
+        id: "jester",
+        nombre: "Bufón / Bufona",
+        nombreBreve: "Bufón/Bufona",
+        nombreEN: "The Jester",
+        cuadrante: "Nadie es una isla",
+        ejes: { pertenencia: 2, estabilidad: -1 },
+        deseoCentral: "Disfrute",
+        motto: "If I can't dance, I don't want to be part of your revolution.", // libro p.213
+        meta: "Pasarlo bien e iluminar el mundo",
+        miedo: "El aburrimiento; aburrir a los demás",
+        estrategia: "Jugar, hacer bromas, ser gracioso",
+        estrategiaBranding: "Entretén y haz reír; muestra el lado luminoso y lúdico incluso de categorías serias.",
+        tonoDeVoz: ["Divertido", "Espontáneo", "Optimista"],
+        ejemploFrase: "La vida es mejor cuando te ríes.",
+        paletaColor: ["#F9A825", "#E53935", "#7B1FA2"],
+        industrias: ["Snacks y dulces", "Cervezas", "Apps de entretenimiento", "Telecom juvenil"],
+        marcaReferencia: "Dollar Shave Club / M&M's",
+        sombra: "Frivolidad; no ser tomado en serio; humor que hiere",
+        color: "#A05A00" /* AA sobre blanco */
+      },
+      {
+        id: "caregiver",
+        nombre: "Cuidador / Cuidadora",
+        nombreBreve: "Cuidador/a",
+        nombreEN: "The Caregiver",
+        cuadrante: "Dar estructura al mundo",
+        ejes: { pertenencia: 1, estabilidad: 2 },
+        deseoCentral: "Servicio",
+        motto: "Love your neighbor as yourself.", // libro p.226
+        meta: "Ayudar a los demás",
+        miedo: "El egoísmo y la ingratitud",
+        estrategia: "Hacer cosas por los demás",
+        estrategiaBranding: "Demuestra cuidado real; comunica protección, generosidad y apoyo en los momentos que importan.",
+        tonoDeVoz: ["Empático", "Protector", "Cálido"],
+        ejemploFrase: "Estamos para cuidarte.",
+        paletaColor: ["#00897B", "#A5D6D9", "#FDF6EC"],
+        industrias: ["Salud", "Seguros", "Farmacéutica", "ONG y educación infantil"],
+        marcaReferencia: "Johnson & Johnson",
+        sombra: "Martirio; paternalismo; hacer sentir culpa",
+        color: "#00695C" /* AA sobre blanco */
+      },
+      {
+        id: "creator",
+        nombre: "Creador / Creadora",
+        nombreBreve: "Creador/a",
+        nombreEN: "The Creator",
+        cuadrante: "Dar estructura al mundo",
+        ejes: { pertenencia: -1, estabilidad: 2 },
+        deseoCentral: "Innovación",
+        motto: "If it can be imagined, it can be created.", // libro p.244
+        meta: "Dar forma a una visión",
+        miedo: "Una visión o ejecución mediocre",
+        estrategia: "Desarrollar control artístico y habilidad",
+        estrategiaBranding: "Celebra la imaginación; da al cliente herramientas y libertad para expresar su propia creatividad.",
+        tonoDeVoz: ["Creativo", "Inspirador", "Perfeccionista"],
+        ejemploFrase: "Imagínalo. Créalo.",
+        paletaColor: ["#F4511E", "#00838F", "#FFF3E0"],
+        industrias: ["Diseño", "Software creativo", "Juguetes de construcción", "Arte y materiales"],
+        marcaReferencia: "LEGO / Apple",
+        sombra: "Perfeccionismo paralizante; crear por crear, sin foco",
+        color: "#C43A10" /* AA sobre blanco */
+      },
+      {
+        id: "ruler",
+        nombre: "Gobernante",
+        nombreBreve: "Gobernante",
+        nombreEN: "The Ruler",
+        cuadrante: "Dar estructura al mundo",
+        ejes: { pertenencia: 0, estabilidad: 2 },
+        deseoCentral: "Control",
+        motto: "Power isn't everything. It's the only thing.", // libro p.261
+        meta: "Crear una familia, empresa o comunidad próspera y exitosa",
+        miedo: "El caos; ser derrocado",
+        estrategia: "Ejercer liderazgo",
+        estrategiaBranding: "Proyecta liderazgo y excelencia; comunica estatus, calidad superior y control.",
+        tonoDeVoz: ["Seguro", "Elegante", "Con autoridad"],
+        ejemploFrase: "El estándar de la excelencia.",
+        paletaColor: ["#283593", "#B08D2E", "#F5F5F5"],
+        industrias: ["Lujo", "Automotriz premium", "Relojería", "Banca y finanzas", "Hotelería premium"],
+        marcaReferencia: "Mercedes-Benz / Rolex",
+        sombra: "Autoritarismo; burocracia; desconectarse de la gente",
+        color: "#283593"
+      }
+    ];
+
+    /* ---------------------------------------------------------
+       QUESTIONS — 14 preguntas (Doc 2 §6)
+       · tipo "ejes": pesos sobre los 2 ejes del libro (HU-07)
+           pertenencia: + = Pertenencia, − = Independencia
+           estabilidad: + = Estabilidad/Control, − = Riesgo/Maestría
+       · tipo "directa": desempate dentro de cada cuadrante,
+           puntos directos a arquetipos individuales (Doc 2 §6.5)
+       · Redactadas sobre COMPORTAMIENTO de marca, no preferencia,
+         para mitigar sesgo de deseabilidad (Doc 1 §8, HU-06)
+       --------------------------------------------------------- */
+    const QUESTIONS = [
+      // --- Eje 1: Pertenencia ↔ Independencia ---
+      {
+        id: "q1", tipo: "ejes",
+        texto: "🎪 Tu marca organiza su primer gran evento. ¿Qué monta?",
+        opciones: [
+          { emoji: "🥳", texto: "Una fiesta comunitaria donde todos participan", pesos: { pertenencia: 2, estabilidad: 0 } },
+          { emoji: "🕯️", texto: "Una experiencia íntima para pocos invitados", pesos: { pertenencia: 1, estabilidad: 0 } },
+          { emoji: "🎤", texto: "Una charla de un experto para aprender algo nuevo", pesos: { pertenencia: -1, estabilidad: 0 } },
+          { emoji: "🏕️", texto: "Una expedición para que cada uno la viva a su manera", pesos: { pertenencia: -2, estabilidad: 0 } },
+        ],
+      },
+      {
+        id: "q2", tipo: "ejes",
+        texto: "📱 Se abre la app de redes sociales. Tu marca, en su día a día…",
+        opciones: [
+          { emoji: "💬", texto: "Conversa con su comunidad y responde a todos", pesos: { pertenencia: 2, estabilidad: 0 } },
+          { emoji: "📈", texto: "Se suma a las tendencias para ser parte de la conversación", pesos: { pertenencia: 1, estabilidad: 0 } },
+          { emoji: "🧠", texto: "Comparte contenido útil, aunque genere menos interacción", pesos: { pertenencia: -1, estabilidad: 0 } },
+          { emoji: "🚀", texto: "Publica su propia visión sin seguir a nadie", pesos: { pertenencia: -2, estabilidad: 0 } },
+        ],
+      },
+      {
+        id: "q3", tipo: "ejes",
+        texto: "🛍️ Imagina a tu cliente ideal saliendo feliz de la compra. ¿Qué valoró sobre todo?",
+        opciones: [
+          { emoji: "👥", texto: "Sentirse parte de un grupo", pesos: { pertenencia: 2, estabilidad: 0 } },
+          { emoji: "🥂", texto: "Compartir buenos momentos con otros", pesos: { pertenencia: 1, estabilidad: 0 } },
+          { emoji: "🤔", texto: "Formarse su propio criterio", pesos: { pertenencia: -1, estabilidad: 0 } },
+          { emoji: "🦅", texto: "Su libertad individual", pesos: { pertenencia: -2, estabilidad: 0 } },
+        ],
+      },
+      {
+        id: "q4", tipo: "ejes",
+        texto: "🗣️ Si tu marca llegara a una conversación, sonaría como…",
+        opciones: [
+          { emoji: "🫂", texto: "Un amigo cercano que te entiende", pesos: { pertenencia: 2, estabilidad: 0 } },
+          { emoji: "🎩", texto: "Un anfitrión que quiere que lo pases bien", pesos: { pertenencia: 1, estabilidad: 0 } },
+          { emoji: "🎓", texto: "Una voz experta e independiente", pesos: { pertenencia: -1, estabilidad: 0 } },
+          { emoji: "🗺️", texto: "Alguien que te invita a salir de la rutina", pesos: { pertenencia: -2, estabilidad: 0 } },
+        ],
+      },
+      {
+        id: "q5", tipo: "ejes",
+        texto: "🤝 Tu marca estrecha la mano del cliente y le hace una promesa. ¿Cuál?",
+        opciones: [
+          { emoji: "🏠", texto: "\"Aquí perteneces\"", pesos: { pertenencia: 2, estabilidad: 0 } },
+          { emoji: "🌈", texto: "\"Eres bienvenido tal como eres\"", pesos: { pertenencia: 1, estabilidad: 0 } },
+          { emoji: "💡", texto: "\"Piensa por ti mismo\"", pesos: { pertenencia: -1, estabilidad: 0 } },
+          { emoji: "🧭", texto: "\"Encuentra tu propio camino\"", pesos: { pertenencia: -2, estabilidad: 0 } },
+        ],
+      },
+      // --- Eje 2: Estabilidad/Control ↔ Riesgo/Maestría ---
+      {
+        id: "q6", tipo: "ejes",
+        texto: "🥊 Tu marca entra a un mercado con jugadores establecidos. Su primer movimiento es…",
+        opciones: [
+          { emoji: "🛡️", texto: "Dar garantías y confianza", pesos: { pertenencia: 0, estabilidad: 2 } },
+          { emoji: "📐", texto: "Mejorar lo existente con orden y calidad", pesos: { pertenencia: 0, estabilidad: 1 } },
+          { emoji: "🏅", texto: "Competir para ser la mejor", pesos: { pertenencia: 0, estabilidad: -1 } },
+          { emoji: "💣", texto: "Desafiar las reglas del mercado", pesos: { pertenencia: 0, estabilidad: -2 } },
+        ],
+      },
+      {
+        id: "q7", tipo: "ejes",
+        texto: "🏆 Pasan 10 años y tu marca gana un premio. ¿Cuál te haría más feliz?",
+        opciones: [
+          { emoji: "🤲", texto: "La más confiable de su categoría", pesos: { pertenencia: 0, estabilidad: 2 } },
+          { emoji: "🏗️", texto: "Construyó algo que durará generaciones", pesos: { pertenencia: 0, estabilidad: 1 } },
+          { emoji: "📊", texto: "Superó récords y metas cada vez más altas", pesos: { pertenencia: 0, estabilidad: -1 } },
+          { emoji: "🌪️", texto: "Transformó su industria", pesos: { pertenencia: 0, estabilidad: -2 } },
+        ],
+      },
+      {
+        id: "q8", tipo: "ejes",
+        texto: "🚨 Un cliente llega con un problema urgente. Tu marca…",
+        opciones: [
+          { emoji: "🤗", texto: "Lo protege y lo acompaña", pesos: { pertenencia: 0, estabilidad: 2 } },
+          { emoji: "📋", texto: "Le da un proceso claro y ordenado", pesos: { pertenencia: 0, estabilidad: 1 } },
+          { emoji: "🧪", texto: "Le propone una solución nunca vista", pesos: { pertenencia: 0, estabilidad: -1 } },
+          { emoji: "💪", texto: "Lo reta a superarse", pesos: { pertenencia: 0, estabilidad: -2 } },
+        ],
+      },
+      {
+        id: "q9", tipo: "ejes",
+        texto: "🎬 Tu marca graba su primer comercial. El tono es…",
+        opciones: [
+          { emoji: "🌤️", texto: "Tranquilizador: \"estás en buenas manos\"", pesos: { pertenencia: 0, estabilidad: 2 } },
+          { emoji: "🧱", texto: "Sólido: \"hecho para durar\"", pesos: { pertenencia: 0, estabilidad: 1 } },
+          { emoji: "⛰️", texto: "Aspiracional: \"llega más lejos\"", pesos: { pertenencia: 0, estabilidad: -1 } },
+          { emoji: "😈", texto: "Desafiante: \"atrévete\"", pesos: { pertenencia: 0, estabilidad: -2 } },
+        ],
+      },
+      {
+        id: "q10", tipo: "ejes",
+        texto: "⚽ Si tu marca jugara en un equipo, sería…",
+        opciones: [
+          { emoji: "🧡", texto: "Quien cuida que nadie quede atrás", pesos: { pertenencia: 0, estabilidad: 2 } },
+          { emoji: "📣", texto: "Quien lidera y organiza", pesos: { pertenencia: 0, estabilidad: 1 } },
+          { emoji: "⚡", texto: "Quien empuja al equipo a ganar", pesos: { pertenencia: 0, estabilidad: -1 } },
+          { emoji: "🎭", texto: "Quien rompe los esquemas", pesos: { pertenencia: 0, estabilidad: -2 } },
+        ],
+      },
+      // --- Desempate por cuadrante (puntos directos a arquetipos) ---
+      {
+        id: "q11", tipo: "directa",
+        texto: "🏛️ Si tu marca ayudara a dar estructura y orden al mundo, lo haría…",
+        opciones: [
+          { emoji: "🩺", texto: "Cuidando y protegiendo a las personas", arquetipos: { caregiver: 2 } },
+          { emoji: "🎨", texto: "Creando productos innovadores y bien diseñados", arquetipos: { creator: 2 } },
+          { emoji: "👑", texto: "Liderando con autoridad y excelencia", arquetipos: { ruler: 2 } },
+          { emoji: "🤷", texto: "Ninguna de estas calza con mi marca", arquetipos: {} },
+        ],
+      },
+      {
+        id: "q12", tipo: "directa",
+        texto: "🌋 Si tu marca quisiera dejar una huella en el mundo, lo haría…",
+        opciones: [
+          { emoji: "🥇", texto: "Ganando desafíos con esfuerzo y disciplina", arquetipos: { hero: 2 } },
+          { emoji: "⛓️", texto: "Rompiendo las reglas establecidas", arquetipos: { outlaw: 2 } },
+          { emoji: "✨", texto: "Haciendo realidad lo que parece imposible", arquetipos: { magician: 2 } },
+          { emoji: "🤷", texto: "Ninguna de estas calza con mi marca", arquetipos: {} },
+        ],
+      },
+      {
+        id: "q13", tipo: "directa",
+        texto: "🌅 Si tu marca le ofreciera un \"paraíso\" a sus clientes, sería…",
+        opciones: [
+          { emoji: "🌼", texto: "Un mundo simple, puro y optimista", arquetipos: { innocent: 2 } },
+          { emoji: "🗻", texto: "Lugares y experiencias por descubrir", arquetipos: { explorer: 2 } },
+          { emoji: "📖", texto: "Conocimiento y verdad para decidir mejor", arquetipos: { sage: 2 } },
+          { emoji: "🤷", texto: "Ninguna de estas calza con mi marca", arquetipos: {} },
+        ],
+      },
+      {
+        id: "q14", tipo: "directa",
+        texto: "🌐 Si tu marca conectara a las personas, lo haría…",
+        opciones: [
+          { emoji: "☕", texto: "Siendo cercana, honesta y sin pretensiones", arquetipos: { regular: 2 } },
+          { emoji: "🌹", texto: "Creando momentos de placer e intimidad", arquetipos: { lover: 2 } },
+          { emoji: "🎈", texto: "Haciendo reír y disfrutar el momento", arquetipos: { jester: 2 } },
+          { emoji: "🤷", texto: "Ninguna de estas calza con mi marca", arquetipos: {} },
+        ],
+      },
+    ];
+
+    /* ---------------------------------------------------------
+       COMPANY_FIELDS — paso "Tu empresa"
+       Reemplaza al mapa de empatía: el alumno piensa en su
+       empresa/emprendimiento antes del test. Estos datos dan
+       contexto al resultado y aparecen en el entregable.
+       --------------------------------------------------------- */
+    const COMPANY_FIELDS = [
+      {
+        key: "queHace",
+        label: "¿Qué hace tu empresa o emprendimiento?",
+        hint: "Describe en una o dos frases qué ofrece y qué problema resuelve.",
+        placeholder: "Ej.: App que arma y despacha la canasta básica del mes al mejor precio.",
+        full: true,
+      },
+      {
+        key: "paraQuien",
+        label: "¿A quién le vende?",
+        hint: "Tu cliente principal, en simple.",
+        placeholder: "Ej.: jóvenes profesionales con poco tiempo para ir al supermercado.",
+      },
+      {
+        key: "diferencia",
+        label: "¿Qué la hace distinta?",
+        hint: "Lo que dirías si te preguntan por qué elegirte a ti.",
+        placeholder: "Ej.: comparamos precios de 5 supermercados en tiempo real.",
+      },
+      {
+        key: "percepcion",
+        label: "¿Cómo te gustaría que la perciban?",
+        hint: "Tres adjetivos que sueñas escuchar sobre tu marca.",
+        placeholder: "Ej.: confiable, cercana, inteligente.",
+        full: true,
+      },
+    ];
+
+    /* Partículas temáticas por arquetipo (easter eggs del resultado) */
+    const PARTICLES = {
+      innocent:  ["🕊️", "☁️", "🌼"],
+      explorer:  ["🧭", "🏔️", "🌲"],
+      sage:      ["📚", "💡", "🔍"],
+      hero:      ["⚡", "🏆", "🔥"],
+      outlaw:    ["🖤", "⛓️", "💥"],
+      magician:  ["✨", "🪄", "🌟"],
+      regular:   ["🤝", "🏡", "☕"],
+      lover:     ["❤️", "🌹", "💋"],
+      jester:    ["🎉", "🎈", "😂"],
+      caregiver: ["💚", "🫶", "🌿"],
+      creator:   ["🎨", "🧱", "🛠️"],
+      ruler:     ["👑", "💎", "🏛️"],
+    };
+
+    /* =========================================================
+       IMÁGENES DE ARQUETIPOS
+       · archArt(id): ilustración SVG "personaje evocador" embebida
+         (dos tonos, sobre el color del arquetipo). Provisional.
+       · <ArchImage/>: intenta cargar img/<id>.svg y luego
+         img/<id>.png; si no existen, cae al SVG embebido.
+         → Deja tus 12 archivos en la carpeta img/ y reemplazan solos.
+       ========================================================= */
+    function archArt(id) {
+      const a = ARCHETYPES.find((x) => x.id === id) || {};
+      const c = a.color || "#334155";
+      const nombre = a.nombre || "Arquetipo";
+      const st = ' stroke="' + c + '" stroke-width="1.6" stroke-linejoin="round"';
+      /* Cuerpo base: hombros + cuello + cabeza + cara (blanco sobre color) */
+      const base =
+        '<path d="M28,120 Q30,92 60,92 Q90,92 92,120 Z" fill="#fff"/>' +
+        '<rect x="54" y="70" width="12" height="16" rx="5" fill="#fff"/>' +
+        '<circle cx="60" cy="56" r="15" fill="#fff"/>' +
+        '<circle cx="54.5" cy="54" r="2" fill="' + c + '"/>' +
+        '<circle cx="65.5" cy="54" r="2" fill="' + c + '"/>' +
+        '<path d="M54,61 Q60,66.5 66,61" fill="none" stroke="' + c + '" stroke-width="2.2" stroke-linecap="round"/>';
+      const PROPS = {
+        innocent:
+          '<ellipse cx="60" cy="30" rx="15" ry="4.6" fill="none" stroke="#fff" stroke-width="3.6"/>' +
+          '<circle cx="83" cy="104" r="6" fill="#fff"' + st + '/><circle cx="83" cy="104" r="2.2" fill="' + c + '"/>',
+        explorer:
+          '<path d="M45,42 Q45,22 60,22 Q75,22 75,42 Z" fill="#fff"' + st + '/>' +
+          '<ellipse cx="60" cy="42" rx="30" ry="6.6" fill="#fff"' + st + '/>' +
+          '<rect x="45" y="37" width="30" height="4.5" rx="2" fill="' + c + '"/>',
+        sage:
+          '<circle cx="54.5" cy="54" r="6" fill="none" stroke="' + c + '" stroke-width="2.2"/>' +
+          '<circle cx="65.5" cy="54" r="6" fill="none" stroke="' + c + '" stroke-width="2.2"/>' +
+          '<line x1="60.5" y1="54" x2="59.5" y2="54" stroke="' + c + '" stroke-width="2.2"/>' +
+          '<path d="M60,120 L37,111 L37,95 L60,103 Z" fill="#fff"' + st + '/>' +
+          '<path d="M60,120 L83,111 L83,95 L60,103 Z" fill="#fff"' + st + '/>' +
+          '<line x1="60" y1="103" x2="60" y2="120" stroke="' + c + '" stroke-width="1.6"/>',
+        hero:
+          '<circle cx="60" cy="107" r="12" fill="#fff"' + st + '/>' +
+          '<path d="M60,99 L62.4,104.6 L68.4,104.9 L63.7,108.7 L65.5,114.5 L60,110.9 L54.5,114.5 L56.3,108.7 L51.6,104.9 L57.6,104.6 Z" fill="' + c + '"/>',
+        outlaw:
+          '<path d="M32,120 Q24,46 60,42 Q96,46 88,120 Z" fill="#fff"' + st + '/>' +
+          '<path d="M43,90 Q39,54 60,54 Q81,54 77,90 Q60,98 43,90 Z" fill="' + c + '"/>' +
+          '<circle cx="54" cy="68" r="2.4" fill="#fff"/><circle cx="66" cy="68" r="2.4" fill="#fff"/>' +
+          '<path d="M61,74 l-4.5,8 l4,-1 l-2,7 l6.5,-9.5 l-4,1 Z" fill="#fff"/>',
+        magician:
+          '<path d="M60,8 L45,42 L75,42 Z" fill="#fff"' + st + '/>' +
+          '<ellipse cx="60" cy="42" rx="26" ry="5.2" fill="#fff"' + st + '/>' +
+          '<path d="M60,22 l1.7,3.8 l4,.3 l-3,2.6 l1,4 l-3.7,-2.2 l-3.7,2.2 l1,-4 l-3,-2.6 l4,-.3 Z" fill="' + c + '"/>' +
+          '<path d="M96,54 l1.6,4.2 l4.2,1.6 l-4.2,1.6 l-1.6,4.2 l-1.6,-4.2 l-4.2,-1.6 l4.2,-1.6 Z" fill="#fff"/>' +
+          '<path d="M20,66 l1.2,3.2 l3.2,1.2 l-3.2,1.2 l-1.2,3.2 l-1.2,-3.2 l-3.2,-1.2 l3.2,-1.2 Z" fill="#fff"/>',
+        regular:
+          '<path d="M52,92 L60,101 L68,92" fill="none" stroke="' + c + '" stroke-width="2.6" stroke-linecap="round"/>' +
+          '<rect x="80" y="100" width="13" height="14" rx="2.5" fill="#fff"' + st + '/>' +
+          '<path d="M93,103 q6,1 5,5.5 q-1,3.5 -5,3.5" fill="none" stroke="#fff" stroke-width="2.4"/>' +
+          '<path d="M84,94 q-2,-3 0,-6 M89,94 q-2,-3 0,-6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/>',
+        lover:
+          '<path d="M60,116 C45,103 40,96 47,90 C52,85.5 60,91 60,91 C60,91 68,85.5 73,90 C80,96 75,103 60,116 Z" fill="#fff"' + st + '/>' +
+          '<path d="M60,109 C52,102 49,98 53,94 C56,91.5 60,95.5 60,95.5 C60,95.5 64,91.5 67,94 C71,98 68,102 60,109 Z" fill="' + c + '"/>',
+        jester:
+          '<path d="M60,25 C40,25 39,44 39,44 L81,44 C81,44 80,25 60,25 Z" fill="#fff"' + st + '/>' +
+          '<path d="M39,44 L23,26 L35,44 Z" fill="#fff"' + st + '/>' +
+          '<path d="M60,25 L60,8 L71,25 Z" fill="#fff"' + st + '/>' +
+          '<path d="M81,44 L97,26 L85,44 Z" fill="#fff"' + st + '/>' +
+          '<circle cx="22" cy="24" r="3.4" fill="' + c + '"/><circle cx="60" cy="7" r="3.4" fill="' + c + '"/><circle cx="98" cy="24" r="3.4" fill="' + c + '"/>',
+        caregiver:
+          '<path d="M60,117 C46,104 41,98 48,92 C53,88 60,93.5 60,93.5 C60,93.5 67,88 72,92 C79,98 74,104 60,117 Z" fill="' + c + '" stroke="#fff" stroke-width="2.6" stroke-linejoin="round"/>' +
+          '<path d="M33,120 Q39,103 51,108" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round"/>' +
+          '<path d="M87,120 Q81,103 69,108" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round"/>',
+        creator:
+          '<path d="M43,38 Q41,25 60,25 Q79,25 77,34 Q60,44 43,38 Z" fill="#fff"' + st + '/>' +
+          '<circle cx="61" cy="23" r="3" fill="#fff"' + st + '/>' +
+          '<line x1="90" y1="120" x2="72" y2="98" stroke="#fff" stroke-width="4.5" stroke-linecap="round"/>' +
+          '<path d="M72,98 l-7,3.5 l4.5,6 Z" fill="' + c + '"/>',
+        ruler:
+          '<rect x="43" y="41" width="34" height="5" rx="2" fill="#fff"' + st + '/>' +
+          '<path d="M43,44 L47,26 L54,37 L60,24 L66,37 L73,26 L77,44 Z" fill="#fff"' + st + '/>' +
+          '<circle cx="60" cy="35" r="2.6" fill="' + c + '"/><circle cx="49.5" cy="36" r="1.9" fill="' + c + '"/><circle cx="70.5" cy="36" r="1.9" fill="' + c + '"/>',
+      };
+      const noBase = id === "outlaw";
+      /* Fondo: degradado suave del color del arquetipo + acento amarillo
+         de la marca. La forma orgánica la aporta la clase CSS .arch-blob,
+         así la misma pieza funciona con ilustración o con fotografía. */
+      const gid = "g-" + id;
+      return (
+        '<svg viewBox="0 0 120 120" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" ' +
+        'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ilustración de ' + nombre + '">' +
+        '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="1" y2="1">' +
+        '<stop offset="0%" stop-color="' + c + '"/>' +
+        '<stop offset="100%" stop-color="' + c + '" stop-opacity="0.78"/>' +
+        '</linearGradient></defs>' +
+        '<rect x="0" y="0" width="120" height="120" fill="url(#' + gid + ')"/>' +
+        '<circle cx="98" cy="108" r="34" fill="#fff" opacity="0.10"/>' +
+        '<circle cx="18" cy="16" r="20" fill="#F4C245" opacity="0.30"/>' +
+        (noBase ? '' : base) + (PROPS[id] || '') +
+        '</svg>'
+      );
+    }
+
+    /* ArchImage
+       · Busca img/<id> en .svg → .png → .jpg → .webp (así puedes usar
+         fotografía sin renombrar nada) y cae a la ilustración embebida.
+       · `blob`: recorta la imagen en forma orgánica (estilo de la app).
+         Se desactiva en la carta y en los exportables, donde conviene
+         una forma estable. */
+    function ArchImage({ id, className, style, blob = true }) {
+      const [i, setI] = useState(0);
+      /* .jpg primero porque es el formato del set actual: evita 24
+         peticiones fallidas al cargar. Los otros siguen funcionando. */
+      const cands = [
+        "img/" + id + ".jpg", "img/" + id + ".webp",
+        "img/" + id + ".png", "img/" + id + ".svg",
+      ];
+      const cls = (className || "") + (blob ? " arch-blob" : "");
+      if (i < cands.length) {
+        return (
+          <img
+            src={cands[i]}
+            alt={"Arquetipo " + id}
+            className={cls}
+            style={style}
+            onError={() => setI(i + 1)}
+          />
+        );
+      }
+      return (
+        <div
+          className={cls}
+          style={style}
+          dangerouslySetInnerHTML={{ __html: archArt(id) }}
+        />
+      );
+    }
+
+    /* Archienemigo: el arquetipo más lejano en el mapa de ejes
+       (el opuesto motivacional según Mark & Pearson) */
+    function nemesisOf(arch) {
+      let best = null, bestD = -1;
+      ARCHETYPES.forEach((a) => {
+        if (a.id === arch.id) return;
+        const d = Math.hypot(a.ejes.pertenencia - arch.ejes.pertenencia, a.ejes.estabilidad - arch.ejes.estabilidad);
+        if (d > bestD) { bestD = d; best = a; }
+      });
+      return best;
+    }
+
+    /* ---------------------------------------------------------
+       scoring() — Doc 2 §6
+       1. Acumula pesos de las preguntas "ejes" en 2 acumuladores.
+       2. Normaliza cada eje a −100..+100 (máx 5 preguntas × ±2 = ±10).
+       3. Cuadrante ganador = polo dominante (mayor |acumulado|).
+       4. Ranking: cercanía de la marca a cada arquetipo en el mapa
+          (escala −2..+2) + puntos directos de las preguntas de
+          desempate (tipo "directa"), con peso 2.
+       Primario = 1º del ranking; secundario = 2º.
+       --------------------------------------------------------- */
+    function scoring(answers) {
+      let p = 0, e = 0;
+      const direct = {};
+      QUESTIONS.forEach((q, i) => {
+        const op = q.opciones[answers[i]];
+        if (!op) return;
+        if (q.tipo === "ejes") {
+          p += op.pesos.pertenencia;
+          e += op.pesos.estabilidad;
+        } else {
+          Object.entries(op.arquetipos || {}).forEach(([id, pts]) => {
+            direct[id] = (direct[id] || 0) + pts;
+          });
+        }
+      });
+
+      const MAX_AXIS = 10; // 5 preguntas × peso máximo 2 por eje
+      const axisBelonging = Math.round((p / MAX_AXIS) * 100); // + Pertenencia / − Independencia
+      const axisStability = Math.round((e / MAX_AXIS) * 100); // + Estabilidad / − Riesgo
+
+      /* Posición de la marca en el mapa (−2..+2) */
+      const bx = (p / MAX_AXIS) * 2;
+      const by = (e / MAX_AXIS) * 2;
+      const MAX_DIST = Math.sqrt(32); // diagonal del plano 4×4
+
+      const ranking = ARCHETYPES.map((a) => {
+        const d = Math.hypot(bx - a.ejes.pertenencia, by - a.ejes.estabilidad);
+        const proximidad = ((MAX_DIST - d) / MAX_DIST) * 10; // 0..10
+        const directo = (direct[a.id] || 0) * 2;             // desempate (Doc 2 §6.5)
+        return { id: a.id, score: Math.round((proximidad + directo) * 10) / 10 };
+      }).sort((x, y) => y.score - x.score);
+
+      /* Cuadrante ganador = cuadrante del arquetipo primario
+         (consistente con el ranking; evita ambigüedad en empates de ejes) */
+      const quadrant = ARCHETYPES.find((a) => a.id === ranking[0].id).cuadrante;
+
+      return { axisBelonging, axisStability, bx, by, quadrant, ranking };
+    }
+
+    /* Definición de los 5 pasos del wizard */
+    const STEPS = [
+      { id: 0, nombre: "Los arquetipos" },
+      { id: 1, nombre: "Tu empresa" },
+      { id: 2, nombre: "El test" },
+      { id: 3, nombre: "Tu arquetipo" },
+      { id: 4, nombre: "Voz de marca" },
+    ];
+
+    /* =========================================================
+       Easter egg: lluvia de partículas temáticas del arquetipo
+       ========================================================= */
+    function themedBurst(archId, color) {
+      const emojis = PARTICLES[archId] || ["✨"];
+      const n = 36;
+      for (let i = 0; i < n; i++) {
+        const el = document.createElement("span");
+        el.className = "particle";
+        el.textContent = emojis[i % emojis.length];
+        el.style.left = Math.random() * 100 + "vw";
+        el.style.fontSize = 14 + Math.random() * 22 + "px";
+        el.style.animationDuration = 2.2 + Math.random() * 2.5 + "s";
+        el.style.animationDelay = Math.random() * 1.2 + "s";
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 6500);
+      }
+    }
+
+    /* =========================================================
+       Barra de progreso + indicador de pasos
+       ========================================================= */
+    function ProgressBar({ step }) {
+      const pct = ((step + 1) / STEPS.length) * 100;
+      return (
+        <div className="w-full max-w-3xl mx-auto px-4 pt-6">
+          <div className="flex justify-between mb-2">
+            {STEPS.map((s) => (
+              <div key={s.id} className="flex flex-col items-center flex-1">
+                <div
+                  className={
+                    "w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors " +
+                    (s.id < step
+                      ? "bg-indigo-600 text-white"
+                      : s.id === step
+                      ? "bg-indigo-600 text-white ring-4 ring-indigo-200"
+                      : "bg-slate-200 text-slate-500")
+                  }
+                  aria-current={s.id === step ? "step" : undefined}
+                >
+                  {s.id + 1}
+                </div>
+                <span
+                  className={
+                    "mt-1 text-[10px] sm:text-xs text-center leading-tight " +
+                    (s.id === step ? "text-indigo-700 font-semibold" : "text-slate-400")
+                  }
+                >
+                  {s.nombre}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div className="w-full bg-slate-200 rounded-full h-2" role="progressbar"
+               aria-valuenow={step + 1} aria-valuemin="1" aria-valuemax={STEPS.length}
+               aria-label={"Paso " + (step + 1) + " de " + STEPS.length}>
+            <div
+              className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+              style={{ width: pct + "%" }}
+            ></div>
+          </div>
+        </div>
+      );
+    }
+
+    /* =========================================================
+       Navegación (Atrás / Siguiente)
+       ========================================================= */
+    function Nav({ step, onBack, onNext, nextLabel, nextDisabled }) {
+      return (
+        <div className="flex justify-between items-center mt-8 max-w-3xl mx-auto w-full">
+          {step > 0 ? (
+            <button
+              onClick={onBack}
+              className="px-6 py-3 rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-100 font-medium focus:outline-none focus:ring-4 focus:ring-slate-200"
+            >
+              ← Atrás
+            </button>
+          ) : (
+            <span></span>
+          )}
+          {step < STEPS.length - 1 && (
+            <button
+              onClick={onNext}
+              disabled={nextDisabled}
+              className="px-8 py-3 rounded-xl bg-indigo-600 text-white font-semibold shadow-md hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-4 focus:ring-indigo-300"
+            >
+              {nextLabel || "Siguiente →"}
+            </button>
+          )}
+        </div>
+      );
+    }
+
+    /* Contenedor común de cada paso.
+       `eyebrow`: etiqueta corta en mayúsculas sobre el título (estilo de la referencia). */
+    function StepShell({ title, subtitle, eyebrow, children }) {
+      return (
+        <div className="max-w-3xl mx-auto px-4 py-8">
+          {eyebrow && <p className="eyebrow mb-2">{eyebrow}</p>}
+          <h1 className="text-2xl sm:text-4xl font-bold text-slate-900">{title}</h1>
+          {subtitle && <p className="mt-3 text-slate-500 text-base sm:text-lg">{subtitle}</p>}
+          <div className="mt-7">{children}</div>
+        </div>
+      );
+    }
+
+    /* =========================================================
+       Pasos del wizard (placeholders — se implementan en
+       las iteraciones 3–5)
+       ========================================================= */
+    /* Diagrama de los dos ejes motivacionales (Doc 1 §3.1)
+       · pole: "top" | "bottom" | "left" | "right" → ilumina el polo dominante
+       · children: elementos extra (ej. el punto de la marca) */
+    const POLE_GLOW = {
+      top:    { x: 60,  y: 40,  w: 340, h: 110 },
+      bottom: { x: 60,  y: 150, w: 340, h: 110 },
+      left:   { x: 60,  y: 40,  w: 170, h: 220 },
+      right:  { x: 230, y: 40,  w: 170, h: 220 },
+    };
+    function AxesDiagram({ children, pole }) {
+      const g = pole ? POLE_GLOW[pole] : null;
+      return (
+        <svg viewBox="-30 0 520 300" className="w-full max-w-md mx-auto" role="img"
+             aria-label="Diagrama de los dos ejes: Pertenencia–Independencia y Estabilidad–Riesgo">
+          {g && (
+            <rect className="quad-glow" x={g.x} y={g.y} width={g.w} height={g.h}
+                  rx="14" fill="#F4C245" opacity="0.28" />
+          )}
+          <line x1="230" y1="40" x2="230" y2="260" stroke="#94a3b8" strokeWidth="2" />
+          <line x1="60" y1="150" x2="400" y2="150" stroke="#94a3b8" strokeWidth="2" />
+          <text x="230" y="24" textAnchor="middle" fontSize="13" fontWeight="bold" fill="#334155">Estabilidad / Control</text>
+          <text x="230" y="34" textAnchor="middle" fontSize="10" fill="#64748b">Dar estructura: Cuidador · Creador · Gobernante</text>
+          <text x="230" y="280" textAnchor="middle" fontSize="13" fontWeight="bold" fill="#334155">Riesgo / Maestría</text>
+          <text x="230" y="292" textAnchor="middle" fontSize="10" fill="#64748b">Dejar huella: Héroe · Forajido · Mago</text>
+          <text x="55" y="140" textAnchor="middle" fontSize="13" fontWeight="bold" fill="#334155">Pertenencia</text>
+          <text x="55" y="164" textAnchor="middle" fontSize="10" fill="#64748b">Nadie es una isla:</text>
+          <text x="55" y="176" textAnchor="middle" fontSize="10" fill="#64748b">H. común · Amante · Bufón</text>
+          <text x="405" y="140" textAnchor="middle" fontSize="13" fontWeight="bold" fill="#334155">Independencia</text>
+          <text x="405" y="164" textAnchor="middle" fontSize="10" fill="#64748b">Anhelo del paraíso:</text>
+          <text x="405" y="176" textAnchor="middle" fontSize="10" fill="#64748b">Inocente · Explorador · Sabio</text>
+          {children}
+        </svg>
+      );
+    }
+
+    /* Blob orgánico amarillo del hero (decorativo) */
+    function HeroBlob() {
+      return (
+        <svg className="blob-deco" viewBox="0 0 820 760" aria-hidden="true"
+             style={{ top: "-190px", right: "-300px", width: "760px", height: "704px", opacity: 0.5 }}>
+          <path fill="#F4C245" d="M612,52c92,44,168,124,190,222c22,98-10,214-72,300c-62,86-154,142-256,158
+            c-102,16-214-8-286-70C116,600,80,500,92,404c12-96,72-188,150-252C320,88,416,48,510,42C544,40,580,42,612,52Z"/>
+        </svg>
+      );
+    }
+
+    function StepIntro() {
+      return (
+        <div className="hero-shell overflow-hidden">
+        <HeroBlob />
+        <StepShell
+          eyebrow="Mark & Pearson · The Hero and the Outlaw"
+          title="Descubre el arquetipo de tu marca"
+          subtitle="Un viaje de 5 pasos · ~10 minutos"
+        >
+          <div className="space-y-5">
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+              <h2 className="font-semibold text-slate-900 text-lg">¿Qué es un arquetipo de marca?</h2>
+              <p className="mt-2 text-slate-600">
+                Es un patrón de personalidad reconocible que una marca adopta para conectar
+                emocionalmente con su audiencia. Mark & Pearson (2001) organizan los 12 arquetipos
+                según cuatro grandes motivaciones humanas dispuestas en dos ejes
+                (<em>The Hero and the Outlaw</em>, p. 14). Este test se basa en esos dos ejes.
+              </p>
+              <div className="mt-4"><AxesDiagram /></div>
+
+              <details className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <summary className="cursor-pointer font-semibold text-slate-900 text-sm">
+                  📌 Estos <em>no</em> son "los 12 arquetipos de Jung" — la precisión importa
+                </summary>
+                <div className="mt-3 text-sm text-slate-600 space-y-3">
+                  <p>
+                    Es el error más repetido en cursos y artículos de branding.{" "}
+                    <strong className="font-semibold text-slate-900">Carl Jung nunca propuso una lista de doce.</strong>{" "}
+                    Sostuvo lo contrario: que son innumerables, porque emergen de la repetición de la
+                    experiencia humana y no de una taxonomía.
+                  </p>
+                  <p className="border-l-2 pl-3 italic" style={{ borderColor: "#F4C245" }}>
+                    "There are as many archetypes as there are typical situations in life."
+                    <span className="block not-italic text-xs text-slate-500 mt-1">
+                      — C. G. Jung, <em>The Archetypes and the Collective Unconscious</em> (CW, vol. 9i)
+                    </span>
+                  </p>
+                  <p>
+                    Jung describió patrones como la <em>persona</em>, la <em>sombra</em>, el
+                    <em> ánima/ánimus</em> o el <em>trickster</em> — no el Héroe, el Mago y el Gobernante
+                    como sistema cerrado. La lista de doce tiene autora:{" "}
+                    <strong className="font-semibold text-slate-900">Carol S. Pearson</strong>, en
+                    <em> The Hero Within</em> (1986, seis arquetipos) y <em>Awakening the Heroes Within</em>{" "}
+                    (1991, doce), pensada para desarrollo personal. Recién en 2001, junto a Margaret Mark,
+                    la lleva al branding y le agrega los dos ejes.
+                  </p>
+                  <p className="text-slate-500">
+                    <strong className="font-semibold text-slate-700">Por qué importa:</strong> llamarlos
+                    "junguianos" les presta una autoridad fundacional que no tienen y desalienta la crítica.
+                    Son una sistematización moderna, útil y discutible.
+                  </p>
+                </div>
+              </details>
+            </div>
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+              <h2 className="font-semibold text-slate-900 text-lg">Conoce los 12 arquetipos</h2>
+              <p className="mt-1 text-slate-500 text-sm">Cada uno tiene su propia personalidad, deseo y tono. Al final del test descubrirás cuál representa a tu marca.</p>
+              <p className="mt-3 text-sm text-slate-600 border-l-2 pl-3" style={{ borderColor: "#F4C245" }}>
+                <strong className="font-semibold text-slate-900">Los arquetipos no tienen género.</strong>{" "}
+                Describen la personalidad de una <em>marca</em>, no el género de una persona. Por eso los
+                nombres van en doble forma — igual que en el libro original, donde este arquetipo se llama
+                <em> The Regular Guy/Gal</em> — y las fotografías son solo ilustrativas: cualquier marca
+                puede ser Héroe o Cuidadora, la dirija quien la dirija.
+              </p>
+
+              <details className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <summary className="cursor-pointer font-semibold text-slate-900 text-sm">
+                  ⚧ Pero el marco sí arrastra género — vale la pena saber dónde
+                </summary>
+                <div className="mt-3 text-sm text-slate-600 space-y-3">
+                  <p>
+                    <strong className="font-semibold text-slate-900">1. El "género de la categoría".</strong>{" "}
+                    Mark & Pearson sostienen que ciertos productos cargan una energía masculina o femenina
+                    que condiciona qué arquetipos les calzan: los snacks salados —crujientes, ruidosos,
+                    de consumo desinhibido— se leen como masculinos y admiten Forajido, Explorador o Bufón;
+                    el helado se lee como femenino y admite Amante, Inocente o Cuidador (pp. 330–335).
+                    El libro advierte de inmediato:
+                  </p>
+                  <p className="border-l-2 pl-3 italic" style={{ borderColor: "#F4C245" }}>
+                    "'Masculine' and 'feminine,' as used in this context, do not imply that a masculine
+                    product is only, or even primarily, for men… we are using masculine and feminine
+                    sensibilities or qualities of consciousness, not sex role prescriptions."
+                    <span className="block not-italic text-xs text-slate-500 mt-1">— Mark &amp; Pearson (2001), p. 330</span>
+                  </p>
+                  <p className="text-slate-500">
+                    La distinción es fina y en la práctica se pierde: "energía femenina" termina siendo
+                    "para mujeres", y el marco pasa de describir marcas a reproducir estereotipos.
+                  </p>
+                  <p>
+                    <strong className="font-semibold text-slate-900">2. Los nombres ya vienen con género.</strong>{" "}
+                    En inglés el arquetipo de la pertenencia es <em>Regular Guy/Gal</em>, y en español lo
+                    traducimos "Hombre común", perdiendo la mitad. El Gobernante, el Héroe y el Sabio se
+                    leen por defecto en masculino; el Cuidador y el Amante, en femenino. Nada de eso está
+                    en la teoría: está en el idioma y en la publicidad que hemos visto toda la vida.
+                    Buena pregunta: ¿por qué imaginaste hombre al Héroe?
+                  </p>
+                  <p>
+                    <strong className="font-semibold text-slate-900">3. El marco es de 2001 y se nota.</strong>{" "}
+                    Trabaja con un género binario y con roles que han cambiado mucho. Sus propios autores
+                    ya apuntaban a la androginia: el Cuidador solo funciona hoy si su expresión es
+                    "androgynous and self-actualized" (p. 226), y Starbucks debe parte de su fuerza a un
+                    carácter deliberadamente andrógino —nombre masculino, logo de sirena— (pp. 74–75).
+                  </p>
+                  <p className="text-slate-500">
+                    <strong className="font-semibold text-slate-700">Cómo usarlo:</strong> trata el género
+                    de categoría como una convención cultural heredada, que puedes acompañar o romper a
+                    propósito. Romperla suele ser la jugada de diferenciación más barata que tiene una marca.
+                  </p>
+                </div>
+              </details>
+              <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 gap-3">
+                {ARCHETYPES.map((a) => (
+                  <div key={a.id} className="flex flex-col items-center text-center">
+                    <ArchImage id={a.id} className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl shadow-sm" />
+                    <span className="mt-1.5 text-xs font-medium text-slate-700 leading-tight">{a.nombreBreve || a.nombre}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="bg-amber-50 rounded-2xl border border-amber-200 p-6">
+              <h2 className="font-semibold text-amber-900">Ojo: ¿marca o cliente?</h2>
+              <p className="mt-1 text-amber-800">
+                El arquetipo describe la personalidad de <strong>tu marca</strong>, no la de tu
+                cliente. Piensa en cómo actúa y habla tu empresa, no en cómo es la gente que le compra.
+              </p>
+            </div>
+            <div className="bg-indigo-50 rounded-2xl border border-indigo-200 p-6">
+              <h2 className="font-semibold text-indigo-900">Cómo funciona</h2>
+              <p className="mt-1 text-indigo-800">
+                1) Cuéntanos de tu empresa o emprendimiento · 2) Responde 14 escenarios ·
+                3) Mira cómo tu marca se mueve por el mapa hasta revelar su arquetipo ·
+                4) Llévate una carta descargable con tu resultado.
+              </p>
+            </div>
+          </div>
+        </StepShell>
+        </div>
+      );
+    }
+
+    function StepCompany({ brandName, onBrandName, company, onChange }) {
+      return (
+        <StepShell
+          eyebrow="Paso 2 · Contexto"
+          title="Tu empresa"
+          subtitle="Antes del test, pon a tu empresa o emprendimiento en el centro. Estas respuestas te ayudarán a responder pensando en tu marca (y aparecen en tu entregable)."
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:col-span-2">
+              <label htmlFor="brandName" className="font-semibold text-slate-900 block">
+                ¿Cómo se llama tu marca o proyecto? <span className="text-rose-500">*</span>
+              </label>
+              <input
+                id="brandName"
+                type="text"
+                value={brandName}
+                onChange={(e) => onBrandName(e.target.value)}
+                placeholder="Ej.: CanastaYa"
+                className="mt-2 w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500 text-lg"
+              />
+            </div>
+            {COMPANY_FIELDS.map((f) => (
+              <div key={f.key}
+                   className={"bg-white rounded-2xl shadow-sm border border-slate-200 p-5 " + (f.full ? "sm:col-span-2" : "")}>
+                <label htmlFor={"comp-" + f.key} className="font-semibold text-slate-900 block">{f.label}</label>
+                <p className="text-sm text-slate-500 mt-0.5">{f.hint}</p>
+                <textarea
+                  id={"comp-" + f.key}
+                  value={company[f.key]}
+                  onChange={(e) => onChange(f.key, e.target.value)}
+                  placeholder={f.placeholder}
+                  rows={2}
+                  className="mt-2 w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500 text-sm resize-y"
+                ></textarea>
+              </div>
+            ))}
+          </div>
+          <p className="mt-4 text-xs text-slate-400">
+            Solo el nombre es obligatorio; el resto es opcional pero recomendado.
+          </p>
+        </StepShell>
+      );
+    }
+
+    function StepTest({ answers, onAnswer, brandName }) {
+      const total = QUESTIONS.length;
+      const firstUnanswered = answers.findIndex((a) => a === null);
+      const [qIdx, setQIdx] = useState(firstUnanswered === -1 ? total - 1 : firstUnanswered);
+      const q = QUESTIONS[qIdx];
+      const answered = answers[qIdx] !== null;
+      const doneCount = answers.filter((a) => a !== null).length;
+      const allDone = doneCount === total;
+
+      /* Posición parcial de la marca en el mapa (solo preguntas de ejes ya respondidas) */
+      let p = 0, e = 0, axisAnswered = 0;
+      QUESTIONS.forEach((qq, i) => {
+        if (qq.tipo !== "ejes" || answers[i] === null) return;
+        p += qq.opciones[answers[i]].pesos.pertenencia;
+        e += qq.opciones[answers[i]].pesos.estabilidad;
+        axisAnswered++;
+      });
+      const bx = (p / 10) * 2, by = (e / 10) * 2;
+      const dotX = 230 - bx * 80, dotY = 150 - by * 52;
+      const pole = axisAnswered === 0 ? null
+        : Math.abs(p) >= Math.abs(e)
+          ? (p === 0 && e === 0 ? null : p >= 0 ? "left" : "right")
+          : (e >= 0 ? "top" : "bottom");
+
+      return (
+        <StepShell eyebrow="Paso 3 · 14 escenarios" title="El test" subtitle="Responde según cómo actúa tu marca hoy (o cómo actuará), no según el estilo que más te guste.">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+            <div className="flex items-center justify-between text-sm text-slate-500">
+              <span>Pregunta {qIdx + 1} de {total}</span>
+              <span>{doneCount}/{total} respondidas</span>
+            </div>
+            <div className="w-full bg-slate-100 rounded-full h-1.5 mt-2" aria-hidden="true">
+              <div className="bg-indigo-500 h-1.5 rounded-full transition-all"
+                   style={{ width: (doneCount / total) * 100 + "%" }}></div>
+            </div>
+            <h2 className="mt-5 text-lg sm:text-xl font-semibold text-slate-900">{q.texto}</h2>
+            <div className="mt-4 space-y-3" role="radiogroup" aria-label={q.texto}>
+              {q.opciones.map((op, i) => {
+                const selected = answers[qIdx] === i;
+                return (
+                  <button
+                    key={i}
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => onAnswer(qIdx, i)}
+                    className={
+                      "w-full text-left px-4 py-3 rounded-xl border-2 transition-colors flex items-center gap-3 " +
+                      (selected
+                        ? "border-indigo-600 bg-indigo-50 text-indigo-900 font-medium"
+                        : "border-slate-200 hover:border-indigo-300 hover:bg-slate-50 text-slate-700")
+                    }
+                  >
+                    {op.emoji && <span className="text-2xl" aria-hidden="true">{op.emoji}</span>}
+                    <span>{op.texto}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex justify-between items-center mt-6">
+              <button
+                onClick={() => setQIdx(qIdx - 1)}
+                disabled={qIdx === 0}
+                className="px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none focus:ring-4 focus:ring-slate-200"
+              >
+                ← Anterior
+              </button>
+              {qIdx < total - 1 ? (
+                <button
+                  onClick={() => setQIdx(qIdx + 1)}
+                  disabled={!answered}
+                  className="px-5 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-4 focus:ring-indigo-300"
+                >
+                  Siguiente pregunta →
+                </button>
+              ) : allDone ? (
+                <span className="text-emerald-600 font-medium">✓ Test completo — presiona "Ver mi resultado"</span>
+              ) : (
+                <span className="text-sm text-slate-400">Responde para terminar</span>
+              )}
+            </div>
+          </div>
+          {/* ===== Mapa en vivo: la marca se mueve al responder ===== */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 mt-5">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-slate-900 text-sm">
+                🧭 {brandName || "Tu marca"} en el mapa — en vivo
+              </h3>
+              <span className="text-xs text-slate-400">
+                {axisAnswered === 0 ? "Responde para verla moverse" : "Se actualiza con cada respuesta"}
+              </span>
+            </div>
+            <div className="mt-2">
+              <AxesDiagram pole={pole}>
+                {axisAnswered > 0 && (
+                  <g className="brand-dot" style={{ transform: "translate(" + dotX + "px, " + dotY + "px)" }}>
+                    <circle r="14" fill="#6366f1" opacity="0.25">
+                      <animate attributeName="r" values="10;16;10" dur="2s" repeatCount="indefinite" />
+                    </circle>
+                    <circle r="8" fill="#4f46e5" stroke="#ffffff" strokeWidth="2.5" />
+                  </g>
+                )}
+              </AxesDiagram>
+            </div>
+          </div>
+          {!allDone && (
+            <p className="mt-3 text-sm text-slate-400 text-center">
+              Debes responder las {total} preguntas para ver tu resultado.
+            </p>
+          )}
+        </StepShell>
+      );
+    }
+
+    /* Bloque etiqueta+valor de la ficha */
+    function InfoBlock({ label, children }) {
+      return (
+        <div className="bg-slate-50 rounded-xl p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+          <div className="mt-1 text-slate-800">{children}</div>
+        </div>
+      );
+    }
+
+    function StepResult({ scores, result, brandName, onRedo, revealed, onRevealed }) {
+      /* Fases del reveal: "suspense" → "revealed" (carta + ficha) */
+      const [phase, setPhase] = useState(revealed ? "revealed" : "suspense");
+      const [flipped, setFlipped] = useState(revealed);
+
+      const prim = scores && result.primary ? ARCHETYPES.find((a) => a.id === result.primary) : null;
+      const sec = scores && result.secondary ? ARCHETYPES.find((a) => a.id === result.secondary) : null;
+
+      /* Flip de la carta + lluvia temática al revelar */
+      useEffect(() => {
+        if (phase === "revealed" && !flipped) {
+          const t1 = setTimeout(() => setFlipped(true), 350);
+          const t2 = setTimeout(() => themedBurst(prim.id, prim.color), 1100);
+          return () => { clearTimeout(t1); clearTimeout(t2); };
+        }
+      }, [phase]);
+
+      if (!scores || !result.primary) {
+        return (
+          <StepShell title="Tu arquetipo" subtitle="Primero completa el test.">
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-slate-400 text-center">
+              Vuelve al paso anterior y responde las {QUESTIONS.length} preguntas.
+            </div>
+          </StepShell>
+        );
+      }
+      const nem = nemesisOf(prim);
+      /* posición de la marca en el SVG: Pertenencia → izquierda, Estabilidad → arriba */
+      const cx = 230 - scores.bx * 80;
+      const cy = 150 - scores.by * 52;
+      /* Distribución primario/secundario entre los 2 dominantes */
+      const s1 = Math.max(scores.ranking[0].score, 0.1), s2 = Math.max(scores.ranking[1].score, 0);
+      const pct1 = Math.round((s1 / (s1 + s2)) * 100), pct2 = 100 - pct1;
+      const cardIdx = ARCHETYPES.findIndex((a) => a.id === prim.id) + 1;
+
+      /* ===== Fase 1: suspenso ===== */
+      if (phase === "suspense") {
+        return (
+          <StepShell title="🔮 Analizando tu marca…" subtitle={brandName ? "Leyendo las respuestas de " + brandName : undefined}>
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-center space-y-5 max-w-xl mx-auto">
+              <p className="fade-up text-lg text-slate-700" style={{ animationDelay: "0.2s" }}>
+                Tu marca vive en el territorio <strong>“{prim.cuadrante}”</strong>…
+              </p>
+              <p className="fade-up text-lg text-slate-700" style={{ animationDelay: "1.1s" }}>
+                …el mismo barrio de marcas como <strong>{prim.marcaReferencia}</strong> y <strong>{sec.marcaReferencia}</strong>…
+              </p>
+              <p className="fade-up text-lg text-slate-700" style={{ animationDelay: "2s" }}>
+                …y su deseo más profundo es la <strong>{prim.deseoCentral.toLowerCase()}</strong>. 👀
+              </p>
+              <div className="fade-up pt-2" style={{ animationDelay: "2.9s" }}>
+                <button
+                  onClick={() => { setPhase("revealed"); onRevealed && onRevealed(); }}
+                  className="px-8 py-4 rounded-2xl bg-indigo-600 text-white text-lg font-bold shadow-lg hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300"
+                >
+                  🎴 Revelar mi arquetipo
+                </button>
+              </div>
+            </div>
+          </StepShell>
+        );
+      }
+
+      /* ===== Fase 2: carta + ficha completa ===== */
+      return (
+        <StepShell
+          eyebrow="Paso 4 · Tu resultado"
+          title={brandName ? "El arquetipo de " + brandName : "Tu arquetipo"}
+          subtitle="Un punto de partida para tu personalidad de marca — no un veredicto."
+        >
+          <div className="space-y-5">
+            {/* ===== Carta coleccionable con flip ===== */}
+            <div className="card-scene max-w-xs mx-auto" style={{ height: "420px" }}>
+              <div className={"card-flip w-full h-full " + (flipped ? "flipped" : "")}>
+                {/* Reverso (se ve primero) */}
+                <div className="card-face card-back absolute inset-0 rounded-3xl shadow-xl border-4 border-white flex flex-col items-center justify-center text-white"
+                     style={{ background: "linear-gradient(135deg, #2B2B2B, #45454E)", transform: "rotateY(0deg)" }}>
+                  <span className="text-7xl" style={{ color: "#F4C245" }}>❓</span>
+                  <p className="mt-4 font-medium tracking-widest uppercase text-sm opacity-70">Arquetipos de marca</p>
+                </div>
+                {/* Frente: la carta del arquetipo */}
+                <div className="card-face absolute inset-0 rounded-3xl shadow-xl border-4 border-white overflow-hidden flex flex-col text-white"
+                     style={{ backgroundColor: prim.color, transform: "rotateY(180deg)" }}>
+                  <div className="flex justify-between items-center px-4 pt-3 text-xs uppercase tracking-widest opacity-90">
+                    <span>Carta {cardIdx}/12</span>
+                    <span>{prim.cuadrante}</span>
+                  </div>
+                  <div className="flex-1 flex flex-col items-center justify-center px-5 text-center">
+                    <ArchImage id={prim.id} className="w-28 h-28 drop-shadow-lg" />
+                    <h2 className="text-2xl font-extrabold mt-3 leading-tight px-1">{prim.nombre}</h2>
+                    <p className="text-sm opacity-80">{prim.nombreEN}</p>
+                    <p className="mt-3 italic opacity-95">“{prim.motto}”</p>
+                  </div>
+                  <div className="bg-black/25 px-5 py-4 text-sm space-y-1.5">
+                    <p><strong>Deseo central:</strong> {prim.deseoCentral}</p>
+                    <p><strong>Tono:</strong> {prim.tonoDeVoz.join(" · ")}</p>
+                    <div className="flex items-center gap-2 pt-1">
+                      <div className="flex-1 bg-white/25 rounded-full h-2">
+                        <div className="bg-white h-2 rounded-full" style={{ width: pct1 + "%" }}></div>
+                      </div>
+                      <span className="text-xs font-bold">{pct1}%</span>
+                    </div>
+                    <p className="text-xs opacity-80">+ {pct2}% {sec.nombreBreve || sec.nombre} (secundario)</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {/* ===== Ficha PRIMARIO ===== */}
+            <div className="rounded-2xl overflow-hidden shadow-md border border-slate-200 bg-white">
+              <div className="relative p-6 sm:p-8 text-white" style={{ backgroundColor: prim.color }}>
+                <ArchImage id={prim.id} className="hidden sm:block absolute top-5 right-5 w-24 h-24 rounded-2xl shadow-lg ring-2 ring-white/40" />
+                <p className="text-xs sm:text-sm uppercase tracking-widest opacity-90">Arquetipo primario</p>
+                <h2 className="text-3xl sm:text-4xl font-bold mt-1">
+                  {prim.nombre} <span className="font-normal text-xl opacity-80">· {prim.nombreEN}</span>
+                </h2>
+                <p className="mt-2 italic text-lg opacity-95">“{prim.motto}”</p>
+                <span className="inline-block mt-3 px-3 py-1 rounded-full bg-white/20 text-sm">
+                  Cuadrante: {prim.cuadrante}
+                </span>
+              </div>
+              <div className="p-6 sm:p-8 space-y-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <InfoBlock label="Deseo central">{prim.deseoCentral}</InfoBlock>
+                  <InfoBlock label="Meta">{prim.meta}</InfoBlock>
+                  <InfoBlock label="Mayor miedo">{prim.miedo}</InfoBlock>
+                  <InfoBlock label="Estrategia">{prim.estrategia}</InfoBlock>
+                </div>
+                <InfoBlock label="Estrategia de branding">{prim.estrategiaBranding}</InfoBlock>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <InfoBlock label="Tono de voz">
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {prim.tonoDeVoz.map((t) => (
+                        <span key={t} className="px-3 py-1 rounded-full text-sm text-white" style={{ backgroundColor: prim.color }}>
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                    <p className="mt-2 italic text-slate-600">Ej.: “{prim.ejemploFrase}”</p>
+                  </InfoBlock>
+                  <InfoBlock label="Paleta de color sugerida">
+                    <div className="flex gap-3 mt-1">
+                      {prim.paletaColor.map((c) => (
+                        <div key={c} className="text-center">
+                          <div className="w-10 h-10 rounded-full border border-slate-200 shadow-sm" style={{ backgroundColor: c }} title={c}></div>
+                          <span className="text-[10px] text-slate-500">{c}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </InfoBlock>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <InfoBlock label="Industrias donde gana">
+                    <ul className="list-disc list-inside text-sm space-y-0.5">
+                      {prim.industrias.map((i) => <li key={i}>{i}</li>)}
+                    </ul>
+                  </InfoBlock>
+                  <InfoBlock label="Marca de referencia">
+                    <p className="font-semibold">{prim.marcaReferencia}</p>
+                    <p className="text-xs text-slate-500 mt-1">Ejemplo ilustrativo (Iconic Fox); discutible en clase.</p>
+                  </InfoBlock>
+                </div>
+                <div className="bg-rose-50 border border-rose-200 rounded-xl p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-rose-600">Sombra / riesgo del arquetipo</p>
+                  <p className="mt-1 text-rose-900">{prim.sombra}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* ===== SECUNDARIO (resumido) ===== */}
+            <div className="bg-white rounded-2xl shadow-sm border-2 p-6" style={{ borderColor: sec.color }}>
+              <p className="text-xs uppercase tracking-widest text-slate-500">Arquetipo secundario</p>
+              <h3 className="text-xl font-bold mt-1" style={{ color: sec.color }}>
+                {sec.nombre} <span className="font-normal text-slate-400">· {sec.nombreEN}</span>
+              </h3>
+              <p className="mt-1 text-slate-600"><strong>Deseo central:</strong> {sec.deseoCentral} · <strong>Tono:</strong> {sec.tonoDeVoz.join(", ")}</p>
+              <p className="mt-2 text-slate-600">
+                Cómo complementa: tu marca es principalmente {prim.nombreBreve}, matizada por {sec.nombreBreve} —
+                suma su búsqueda de {sec.deseoCentral.toLowerCase()} al núcleo de {prim.deseoCentral.toLowerCase()}.
+                Las marcas reales rara vez son un arquetipo puro.
+              </p>
+            </div>
+
+            {/* ===== Archienemigo: el opuesto en el mapa ===== */}
+            <div className="bg-slate-900 rounded-2xl shadow-sm p-6 text-white">
+              <p className="text-xs uppercase tracking-widest text-slate-400">⚔️ Tu archienemigo</p>
+              <div className="flex items-center gap-3 mt-1">
+                <ArchImage id={nem.id} className="w-12 h-12 rounded-xl shadow-md shrink-0 ring-1 ring-white/20" />
+                <h3 className="text-xl font-bold">
+                  {nem.nombre} <span className="font-normal text-slate-400">· {nem.nombreEN}</span>
+                </h3>
+              </div>
+              <p className="mt-2 text-slate-300">
+                Es el arquetipo más lejano al tuyo en el mapa de motivaciones de Mark & Pearson:
+                donde {prim.nombreBreve} busca {prim.deseoCentral.toLowerCase()}, {nem.nombreBreve} busca {nem.deseoCentral.toLowerCase()}.
+                No es una marca "mala" — es una personalidad que tu marca <strong>no debería imitar</strong>:
+                si mezclas ambos tonos, tu comunicación pierde coherencia.
+              </p>
+              <p className="mt-2 text-slate-400 text-sm">
+                Piensa en {nem.marcaReferencia}: excelente marca… con una personalidad opuesta a la tuya.
+              </p>
+            </div>
+
+            {/* ===== Gráfico de posición en los 2 ejes (HU-10) ===== */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+              <h3 className="font-semibold text-slate-900">¿Por qué este resultado?</h3>
+              <p className="text-sm text-slate-500 mt-1">
+                Posición de {brandName || "tu marca"} en los dos ejes de Mark & Pearson:
+                Pertenencia {scores.axisBelonging >= 0 ? "+" : ""}{scores.axisBelonging} ·
+                Estabilidad {scores.axisStability >= 0 ? "+" : ""}{scores.axisStability} (escala −100..+100).
+                Cuadrante dominante: <strong>{scores.quadrant}</strong>.
+              </p>
+              <div className="mt-3">
+                <AxesDiagram>
+                  <circle cx={cx} cy={cy} r="9" fill={prim.color} stroke="#ffffff" strokeWidth="3" />
+                  <text x={cx} y={cy - 14} textAnchor="middle" fontSize="11" fontWeight="bold" fill={prim.color}>
+                    {brandName || "Tu marca"}
+                  </text>
+                </AxesDiagram>
+              </div>
+            </div>
+
+            <div className="text-center">
+              <button
+                onClick={onRedo}
+                className="px-6 py-3 rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-100 font-medium focus:outline-none focus:ring-4 focus:ring-slate-200"
+              >
+                ↺ Rehacer test
+              </button>
+            </div>
+          </div>
+        </StepShell>
+      );
+    }
+
+    /* =========================================================
+       Paso 4 — Constructor de voz + exportación (Doc 2 §3, HU-12..14)
+       ========================================================= */
+    const VOICE_FIELDS = [
+      { key: "message1", label: "Mensaje / claim 1", placeholder: "Ej.: un beneficio central de tu marca, dicho en el tono del arquetipo." },
+      { key: "message2", label: "Mensaje / claim 2", placeholder: "Ej.: qué te diferencia de la competencia." },
+      { key: "message3", label: "Mensaje / claim 3", placeholder: "Ej.: una llamada a la acción para tu cliente." },
+    ];
+    const COMPANY_LABELS = {
+      queHace: "Qué hace", paraQuien: "A quién le vende",
+      diferencia: "Qué la hace distinta", percepcion: "Cómo quiere ser percibida",
+    };
+
+    function StepVoice({ voice, onChange, result, scores, brandName, company, onRestart }) {
+      const [busy, setBusy] = useState(false);
+      if (!scores || !result.primary) {
+        return (
+          <StepShell title="Tu voz de marca" subtitle="Primero completa el test.">
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-slate-400 text-center">
+              Vuelve al test y responde las {QUESTIONS.length} preguntas para desbloquear este paso.
+            </div>
+          </StepShell>
+        );
+      }
+      const prim = ARCHETYPES.find((a) => a.id === result.primary);
+      const sec = ARCHETYPES.find((a) => a.id === result.secondary);
+      const empresaLlena = Object.entries(company).filter(([k, v]) => v && v.trim());
+      const fileBase = (brandName || "mi-marca").toLowerCase().replace(/[^a-z0-9áéíóúñü]+/gi, "-");
+      /* Distribución primario/secundario (misma fórmula del resultado) */
+      const s1 = Math.max(scores.ranking[0].score, 0.1), s2 = Math.max(scores.ranking[1].score, 0);
+      const pct1 = Math.round((s1 / (s1 + s2)) * 100), pct2 = 100 - pct1;
+
+      /* --- Exportación (HU-13) --- */
+      const renderCanvas = () =>
+        html2canvas(document.getElementById("export-card"), { scale: 2, backgroundColor: "#ffffff", useCORS: true });
+
+      const exportStory = async () => {
+        setBusy(true);
+        try {
+          const canvas = await html2canvas(document.getElementById("story-card"), { scale: 3, useCORS: true });
+          const a = document.createElement("a");
+          a.download = fileBase + "-arquetipo-story.png";
+          a.href = canvas.toDataURL("image/png");
+          a.click();
+        } finally { setBusy(false); }
+      };
+
+      const exportPNG = async () => {
+        setBusy(true);
+        try {
+          const canvas = await renderCanvas();
+          const a = document.createElement("a");
+          a.download = fileBase + "-arquetipo.png";
+          a.href = canvas.toDataURL("image/png");
+          a.click();
+        } finally { setBusy(false); }
+      };
+
+      const exportPDF = async () => {
+        setBusy(true);
+        try {
+          const canvas = await renderCanvas();
+          const { jsPDF } = window.jspdf;
+          const pdf = new jsPDF({ unit: "mm", format: "a4" });
+          const pw = 210, ph = 297, margin = 10;
+          const iw = pw - 2 * margin;
+          const pageHpx = ((ph - 2 * margin) * canvas.width) / iw; // alto de página en px del canvas
+          let y = 0, page = 0;
+          while (y < canvas.height) {
+            const slice = document.createElement("canvas");
+            slice.width = canvas.width;
+            slice.height = Math.min(pageHpx, canvas.height - y);
+            slice.getContext("2d").drawImage(canvas, 0, y, canvas.width, slice.height, 0, 0, canvas.width, slice.height);
+            if (page > 0) pdf.addPage();
+            pdf.addImage(slice.toDataURL("image/jpeg", 0.95), "JPEG", margin, margin, iw, (slice.height * iw) / canvas.width);
+            y += pageHpx; page++;
+          }
+          pdf.save(fileBase + "-arquetipo.pdf");
+        } finally { setBusy(false); }
+      };
+
+      return (
+        <StepShell
+          eyebrow="Paso 5 · Entregable"
+          title="Tu voz de marca"
+          subtitle={"Traduce el arquetipo " + prim.nombreBreve + " en mensajes propios y descarga tu entregable."}
+        >
+          <div className="space-y-5">
+            {/* Guía de tono del arquetipo (HU-12) */}
+            <div className="rounded-2xl border-2 p-6 bg-white" style={{ borderColor: prim.color }}>
+              <p className="text-xs uppercase tracking-widest text-slate-500">Guía de tono — {prim.nombre}</p>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {prim.tonoDeVoz.map((t) => (
+                  <span key={t} className="px-3 py-1 rounded-full text-sm text-white" style={{ backgroundColor: prim.color }}>{t}</span>
+                ))}
+              </div>
+              <p className="mt-2 text-slate-600 text-sm">{prim.estrategiaBranding}</p>
+              <p className="mt-1 italic text-slate-600 text-sm">Frase de ejemplo: “{prim.ejemploFrase}”</p>
+            </div>
+
+            {/* Campos de redacción */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+              {VOICE_FIELDS.map((f) => (
+                <div key={f.key}>
+                  <label htmlFor={"voice-" + f.key} className="font-semibold text-slate-900 block">{f.label}</label>
+                  <textarea
+                    id={"voice-" + f.key}
+                    value={voice[f.key]}
+                    onChange={(e) => onChange(f.key, e.target.value)}
+                    placeholder={f.placeholder}
+                    rows={2}
+                    className="mt-1 w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500 text-sm resize-y"
+                  ></textarea>
+                </div>
+              ))}
+              <div>
+                <label htmlFor="voice-tagline" className="font-semibold text-slate-900 block">Tagline</label>
+                <input
+                  id="voice-tagline"
+                  type="text"
+                  value={voice.tagline}
+                  onChange={(e) => onChange("tagline", e.target.value)}
+                  placeholder={"Ej.: una frase corta y memorable, estilo “" + prim.ejemploFrase + "”"}
+                  className="mt-1 w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500 text-lg"
+                />
+              </div>
+            </div>
+
+            {/* Vista previa del entregable (lo que se exporta) */}
+            <div>
+              <h3 className="font-semibold text-slate-900 mb-2">Vista previa del entregable</h3>
+              <div id="export-card" className="bg-white rounded-2xl border border-slate-200 overflow-hidden max-w-2xl mx-auto">
+                <div className="p-6 text-white" style={{ backgroundColor: prim.color }}>
+                  <p className="text-xs uppercase tracking-widest opacity-90">Arquetipo de marca</p>
+                  <h2 className="text-2xl font-bold mt-1">{brandName || "Mi marca"}</h2>
+                  <p className="mt-1 text-lg">
+                    <strong>{prim.nombreBreve}</strong> ({prim.nombreEN}) + secundario: {sec.nombreBreve}
+                  </p>
+                  <p className="italic opacity-95 mt-1">“{prim.motto}”</p>
+                </div>
+                <div className="p-6 space-y-4 text-sm">
+                  <div>
+                    <p className="font-bold text-slate-900 uppercase text-xs tracking-wide">Arquetipo primario — {prim.nombre}</p>
+                    <p className="text-slate-700 mt-1">
+                      <strong>Deseo:</strong> {prim.deseoCentral} · <strong>Cuadrante:</strong> {prim.cuadrante} ·
+                      <strong> Tono:</strong> {prim.tonoDeVoz.join(", ")}
+                    </p>
+                    <p className="text-slate-700 mt-1">{prim.estrategiaBranding}</p>
+                    <p className="text-slate-500 mt-1">
+                      Posición en ejes: Pertenencia {scores.axisBelonging >= 0 ? "+" : ""}{scores.axisBelonging} ·
+                      Estabilidad {scores.axisStability >= 0 ? "+" : ""}{scores.axisStability}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-bold text-slate-900 uppercase text-xs tracking-wide">Arquetipo secundario — {sec.nombre}</p>
+                    <p className="text-slate-700 mt-1"><strong>Deseo:</strong> {sec.deseoCentral} · <strong>Tono:</strong> {sec.tonoDeVoz.join(", ")}</p>
+                  </div>
+                  <div>
+                    <p className="font-bold text-slate-900 uppercase text-xs tracking-wide">Sobre la empresa</p>
+                    {empresaLlena.length > 0 ? (
+                      <ul className="mt-1 space-y-0.5 text-slate-700">
+                        {empresaLlena.map(([k, v]) => (
+                          <li key={k}><strong>{COMPANY_LABELS[k]}:</strong> {v}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-slate-400 mt-1">(No completado)</p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-bold text-slate-900 uppercase text-xs tracking-wide">Mensajes en la voz de la marca</p>
+                    <ol className="mt-1 list-decimal list-inside space-y-0.5 text-slate-700">
+                      {[voice.message1, voice.message2, voice.message3].map((m, i) => (
+                        <li key={i}>{m || <span className="text-slate-400">(vacío)</span>}</li>
+                      ))}
+                    </ol>
+                    <p className="mt-2 text-lg font-semibold" style={{ color: prim.color }}>
+                      {voice.tagline || "(sin tagline)"}
+                    </p>
+                  </div>
+                  <div className="pt-3 border-t border-slate-200 text-[10px] text-slate-500">
+                    Fuentes: Mark, M. & Pearson, C. S. (2001). <em>The Hero and the Outlaw</em>. McGraw-Hill (ejes pp. 14–15; motto
+                    verificado) · Iconic Fox, <em>Brand Archetypes: The Definitive Guide</em> (iconicfox.com.au/brand-archetypes).
+                    Generado con el asistente de arquetipos del curso.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ===== Story para redes (se exporta desde un lienzo oculto) ===== */}
+            <div style={{ position: "absolute", left: "-9999px", top: 0 }} aria-hidden="true">
+              <div id="story-card"
+                   style={{ width: "405px", height: "720px", background: "linear-gradient(160deg, " + prim.color + " 0%, #111827 130%)" }}
+                   className="text-white flex flex-col justify-between p-8">
+                <div>
+                  <p className="text-xs uppercase tracking-widest opacity-80">Mi arquetipo de marca</p>
+                  <div className="w-24 h-24 mt-4" dangerouslySetInnerHTML={{ __html: archArt(prim.id) }} />
+                  <h2 className="text-3xl font-extrabold mt-3">{brandName || "Mi marca"}</h2>
+                  <p className="text-xl mt-1 font-semibold opacity-95">es {prim.nombreBreve}</p>
+                  <p className="italic mt-3 opacity-90">“{prim.motto}”</p>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <div className="flex justify-between text-sm font-semibold"><span>{prim.nombreBreve || prim.nombre}</span><span>{pct1}%</span></div>
+                    <div className="bg-white/25 rounded-full h-2.5 mt-1"><div className="bg-white h-2.5 rounded-full" style={{ width: pct1 + "%" }}></div></div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-sm opacity-90"><span>{sec.nombreBreve || sec.nombre}</span><span>{pct2}%</span></div>
+                    <div className="bg-white/25 rounded-full h-2.5 mt-1"><div className="bg-white/70 h-2.5 rounded-full" style={{ width: pct2 + "%" }}></div></div>
+                  </div>
+                  <p className="text-sm pt-1"><strong>Deseo central:</strong> {prim.deseoCentral} · <strong>Tono:</strong> {prim.tonoDeVoz.join(", ")}</p>
+                  <div className="flex gap-2 pt-1">
+                    {prim.paletaColor.map((c) => (
+                      <div key={c} className="w-8 h-8 rounded-full border-2 border-white/60" style={{ backgroundColor: c }}></div>
+                    ))}
+                  </div>
+                  <p className="text-[10px] opacity-70 pt-2">Basado en Mark & Pearson (2001), The Hero and the Outlaw · Test de arquetipos del curso</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Acciones */}
+            <div className="flex flex-wrap justify-center gap-3">
+              <button
+                onClick={exportPNG}
+                disabled={busy}
+                className="px-6 py-3 rounded-xl bg-indigo-600 text-white font-semibold shadow-md hover:bg-indigo-700 disabled:opacity-50 focus:outline-none focus:ring-4 focus:ring-indigo-300"
+              >
+                ⬇ Descargar PNG
+              </button>
+              <button
+                onClick={exportPDF}
+                disabled={busy}
+                className="px-6 py-3 rounded-xl bg-indigo-600 text-white font-semibold shadow-md hover:bg-indigo-700 disabled:opacity-50 focus:outline-none focus:ring-4 focus:ring-indigo-300"
+              >
+                ⬇ Descargar PDF
+              </button>
+              <button
+                onClick={exportStory}
+                disabled={busy}
+                className="px-6 py-3 rounded-xl text-white font-semibold shadow-md disabled:opacity-50 focus:outline-none focus:ring-4 focus:ring-indigo-300"
+                style={{ background: "linear-gradient(135deg, " + prim.color + ", #111827)" }}
+              >
+                📲 Story para redes
+              </button>
+              <button
+                onClick={onRestart}
+                className="px-6 py-3 rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-100 font-medium focus:outline-none focus:ring-4 focus:ring-slate-200"
+              >
+                ↺ Empezar de nuevo
+              </button>
+            </div>
+            {busy && <p className="text-center text-sm text-slate-400">Generando archivo…</p>}
+
+            {/* ---- Limitaciones de esta mirada (cierre crítico) ---- */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mt-8">
+              <p className="eyebrow" style={{ color: "#C25A4E" }}>Antes de irte</p>
+              <h2 className="font-serif text-2xl font-bold text-slate-900 mt-1">
+                Las limitaciones de esta mirada
+              </h2>
+              <p className="mt-2 text-slate-600 text-sm">
+                Ya tienes tu resultado. Ahora la parte incómoda: un arquetipo es una herramienta útil,
+                no una verdad. Estas son las cosas que esta app <em>no</em> puede hacer.
+              </p>
+
+              <div className="mt-5 space-y-4">
+                {[
+                  ["Un test siempre simplifica",
+                   "Catorce preguntas no capturan la complejidad de una marca. Tu resultado es una hipótesis de trabajo, no un veredicto. Por eso ves un primario y un secundario, y por eso puedes rehacerlo."],
+                  ["El modelo no está validado empíricamente",
+                   "Los arquetipos son un marco interpretativo, no un constructo psicométrico. No hay evidencia sólida de que las marcas \"tengan\" arquetipos de forma medible, ni de que uno cause mejores resultados de negocio. Su valor es organizar decisiones de comunicación."],
+                  ["Sesgo de deseabilidad",
+                   "Tendemos a inclinarnos hacia arquetipos atractivos —Héroe, Mago, Creador— y a evitar los que suenan menos glamorosos, aunque describan mejor a la marca. Las preguntas por escenarios lo mitigan, pero no lo eliminan."],
+                  ["Las marcas de ejemplo son discutibles",
+                   "Decir que Nike es Héroe o Google Sabio es una lectura, no un hecho. Una misma marca admite varias interpretaciones. Úsalas para discutir, no para zanjar."],
+                  ["Las imágenes son generadas con IA, y traen su sesgo",
+                   "Las doce ilustraciones se generaron con Gemini, con fines pedagógicos, para evitar problemas de derechos y de uso de imagen de personas reales. El hallazgo no estaba planificado: las primeras versiones no representaban a Chile —el modelo devolvía por defecto rostros, vestuario y escenarios del norte global— y hubo que pedir el contexto local de forma explícita. \"Por defecto\" no significa \"neutro\". La misma pregunta se le puede hacer a cualquier marca que use IA generativa: ¿a quién está mostrando, y a quién no?"],
+                  ["Sesgo cultural del marco",
+                   "El sistema nació con marcas norteamericanas de consumo masivo de fines de los noventa. Sus ejemplos y connotaciones no se leen igual en un mercado local, ni en marcas B2B o públicas."],
+                  ["El arquetipo no reemplaza a la estrategia",
+                   "Define personalidad y tono, no segmentación, propuesta de valor, precio ni canal. Una marca con arquetipo impecable y propuesta de valor débil sigue siendo una marca débil."],
+                  ["Riesgo de estereotipo",
+                   "Aplicado sin criterio produce comunicación previsible: todos los Héroes hablando de superación. El arquetipo fija la dirección; la ejecución tiene que ser tuya."],
+                ].map(([t, d]) => (
+                  <div key={t} className="pl-4" style={{ borderLeft: "3px solid #D2685C" }}>
+                    <h3 className="font-serif font-bold text-slate-900 text-base">{t}</h3>
+                    <p className="text-sm text-slate-600 mt-1">{d}</p>
+                  </div>
+                ))}
+              </div>
+
+              <p className="mt-5 text-sm text-slate-500 border-t border-slate-200 pt-4">
+                Fuentes: Mark, M. &amp; Pearson, C. S. (2001), <em>The Hero and the Outlaw</em>, McGraw-Hill ·
+                Jung, C. G., <em>The Archetypes and the Collective Unconscious</em> (CW 9i) ·
+                Pearson, C. S. (1991), <em>Awakening the Heroes Within</em> ·
+                Iconic Fox, <em>Brand Archetypes: The Definitive Guide</em>.
+                <br />
+                Material docente de{" "}
+                <a href="https://patriciocastro.cl" target="_blank" rel="noopener"
+                   className="underline" style={{ color: "#8A6508" }}>Patricio Castro</a>{" "}
+                · Universidad Adolfo Ibáñez ·{" "}
+                <a href="index.html" className="underline" style={{ color: "#8A6508" }}>
+                  Más sobre este proyecto
+                </a>
+              </p>
+            </div>
+          </div>
+        </StepShell>
+      );
+    }
+
+    /* =========================================================
+       App — estado global y wizard (Doc 2 §2)
+       ========================================================= */
+    function App() {
+      const [state, setState] = useState({
+        step: 0,
+        brandName: "",
+        company: { queHace: "", paraQuien: "", diferencia: "", percepcion: "" },
+        answers: Array(QUESTIONS.length).fill(null),
+        scores: null,
+        result: { primary: null, secondary: null },
+        revealed: false,
+        voice: { message1: "", message2: "", message3: "", tagline: "" },
+      });
+
+      const goTo = (step) =>
+        setState((s) => ({ ...s, step: Math.max(0, Math.min(STEPS.length - 1, step)) }));
+
+      const setBrandName = (v) => setState((s) => ({ ...s, brandName: v }));
+      const setCompany = (key, v) =>
+        setState((s) => ({ ...s, company: { ...s.company, [key]: v } }));
+      const setRevealed = () => setState((s) => ({ ...s, revealed: true }));
+      const setAnswer = (qIdx, optIdx) =>
+        setState((s) => {
+          const answers = s.answers.slice();
+          answers[qIdx] = optIdx;
+          return { ...s, answers };
+        });
+
+      const allAnswered = state.answers.every((a) => a !== null);
+
+      /* Al salir del test: calcular scoring y resultado (Doc 2 §6) */
+      const handleNext = () => {
+        if (state.step === 2) {
+          const scores = scoring(state.answers);
+          setState((s) => ({
+            ...s,
+            scores,
+            result: { primary: scores.ranking[0].id, secondary: scores.ranking[1].id },
+            revealed: false,
+            step: 3,
+          }));
+        } else {
+          goTo(state.step + 1);
+        }
+      };
+
+      const setVoice = (key, v) =>
+        setState((s) => ({ ...s, voice: { ...s.voice, [key]: v } }));
+
+      /* Empezar de nuevo: estado inicial completo */
+      const restart = () =>
+        setState({
+          step: 0,
+          brandName: "",
+          company: { queHace: "", paraQuien: "", diferencia: "", percepcion: "" },
+          answers: Array(QUESTIONS.length).fill(null),
+          scores: null,
+          result: { primary: null, secondary: null },
+          revealed: false,
+          voice: { message1: "", message2: "", message3: "", tagline: "" },
+        });
+
+      /* Rehacer test (HU-11): limpia respuestas y resultado */
+      const redoTest = () =>
+        setState((s) => ({
+          ...s,
+          answers: Array(QUESTIONS.length).fill(null),
+          scores: null,
+          result: { primary: null, secondary: null },
+          revealed: false,
+          step: 2,
+        }));
+
+      const stepComponents = [
+        <StepIntro key="intro" />,
+        <StepCompany key="company" brandName={state.brandName} onBrandName={setBrandName}
+                     company={state.company} onChange={setCompany} />,
+        <StepTest key="test" answers={state.answers} onAnswer={setAnswer} brandName={state.brandName} />,
+        <StepResult key="result" scores={state.scores} result={state.result} brandName={state.brandName}
+                    onRedo={redoTest} revealed={state.revealed} onRevealed={setRevealed} />,
+        <StepVoice key="voice" voice={state.voice} onChange={setVoice} result={state.result}
+                   scores={state.scores} brandName={state.brandName} company={state.company} onRestart={restart} />,
+      ];
+
+      /* No avanza del test sin responder todo (HU-05) ni de "Tu empresa" sin nombre */
+      const nextDisabled =
+        (state.step === 1 && !state.brandName.trim()) ||
+        (state.step === 2 && !allAnswered);
+      const nextLabel =
+        state.step === 0 ? "Comenzar →"
+        : state.step === 1 ? "Ir al test →"
+        : state.step === 2 ? "Ver mi resultado →"
+        : state.step === 3 ? "Construir mi voz de marca →"
+        : undefined;
+
+      return (
+        <div className="min-h-screen flex flex-col">
+          <ProgressBar step={state.step} />
+          <main className="flex-1">{stepComponents[state.step]}</main>
+          <div className="px-4 pb-10">
+            <Nav
+              step={state.step}
+              onBack={() => goTo(state.step - 1)}
+              onNext={handleNext}
+              nextLabel={nextLabel}
+              nextDisabled={nextDisabled}
+            />
+          </div>
+          <footer className="max-w-3xl mx-auto text-xs text-slate-500 pb-8 px-4">
+            <p className="font-semibold text-slate-600 uppercase tracking-wide text-[11px]">Fuentes</p>
+            <ul className="mt-1 space-y-0.5">
+              <li>Mark, M. & Pearson, C. S. (2001). <em>The Hero and the Outlaw: Building Extraordinary Brands Through the Power of Archetypes</em>. McGraw-Hill. Ejes motivacionales: pp. 14–15; cuadrantes: índice pp. v–vi; <em>mottos</em> verificados por arquetipo.</li>
+              <li>Iconic Fox. <em>Brand Archetypes: The Definitive Guide</em>. iconicfox.com.au/brand-archetypes (deseo central, estrategia de branding, industrias, marcas de referencia, tono de voz).</li>
+            </ul>
+            <p className="mt-3 pt-3 border-t border-slate-200 leading-relaxed">
+              <span className="font-semibold text-slate-600">Licencia:</span> obra bajo{" "}
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.es" target="_blank" rel="noopener license" className="underline">CC BY-NC-SA 4.0</a>.
+              Material docente de Patricio Castro, Universidad Adolfo Ib&aacute;&ntilde;ez. Uso educativo con atribuci&oacute;n.{" "}
+              <a href="index.html" className="underline">Volver al inicio</a>
+            </p>
+          </footer>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
