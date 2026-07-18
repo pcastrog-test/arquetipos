@@ -369,16 +369,50 @@
         </p>
       </div>
       <div class="axes">
-        <div class="axis-label al-top">Estabilidad / Control</div>
-        <div class="axis-label al-bottom">Riesgo / Maestría</div>
-        <div class="axis-label al-left">Independencia</div>
-        <div class="axis-label al-right">Pertenencia</div>
-        <div class="qgrid">
-          <div class="quad q1"><span><b>El anhelo del paraíso</b>Inocente · Explorador · Sabio</span></div>
-          <div class="quad q2"><span><b>Dar estructura al mundo</b>Cuidador · Creador · Gobernante</span></div>
-          <div class="quad q3"><span><b>Dejar huella en el mundo</b>Héroe · Forajido · Mago</span></div>
-          <div class="quad q4"><span><b>Nadie es una isla</b>H. común · Amante · Bufón</span></div>
-        </div>
+        <svg viewBox="0 0 660 540" width="100%" style="max-width:490px;height:auto;display:block;margin:0 auto" role="img" aria-label="Modelo de dos ejes: estabilidad/control frente a riesgo/maestría, e independencia frente a pertenencia, con cuatro cuadrantes y tres arquetipos cada uno.">
+          <defs>
+            <clipPath id="axclip"><rect x="160" y="80" width="360" height="360" rx="20"/></clipPath>
+          </defs>
+          <!-- base y cuadrantes -->
+          <rect x="160" y="80" width="360" height="360" rx="20" fill="#ffffff"/>
+          <g clip-path="url(#axclip)">
+            <rect x="160" y="80" width="180" height="180" fill="#FEFCF5"/>
+            <rect x="340" y="260" width="180" height="180" fill="#FEFCF5"/>
+          </g>
+          <!-- cruz -->
+          <line x1="340" y1="80" x2="340" y2="440" stroke="#E6E6EA" stroke-width="1"/>
+          <line x1="160" y1="260" x2="520" y2="260" stroke="#E6E6EA" stroke-width="1"/>
+          <rect x="160" y="80" width="360" height="360" rx="20" fill="none" stroke="#E6E6EA" stroke-width="1.5"/>
+          <!-- etiquetas de ejes -->
+          <g font-family="'Poppins',sans-serif" font-size="13" font-weight="600" fill="#8A6508" letter-spacing="1">
+            <text x="340" y="54" text-anchor="middle">ESTABILIDAD / CONTROL</text>
+            <text x="340" y="480" text-anchor="middle">RIESGO / MAESTRÍA</text>
+            <text x="148" y="264" text-anchor="end">INDEPENDENCIA</text>
+            <text x="532" y="264" text-anchor="start">PERTENENCIA</text>
+          </g>
+          <!-- títulos de cuadrante -->
+          <g font-family="'Playfair Display',Georgia,serif" font-size="15" font-weight="700" fill="#2B2B2B">
+            <text x="180" y="114">El anhelo del</text>
+            <text x="180" y="133">paraíso</text>
+            <text x="360" y="114">Dar estructura</text>
+            <text x="360" y="133">al mundo</text>
+            <text x="180" y="294">Dejar huella</text>
+            <text x="180" y="313">en el mundo</text>
+            <text x="360" y="294">Nadie es</text>
+            <text x="360" y="313">una isla</text>
+          </g>
+          <!-- arquetipos -->
+          <g font-family="'Poppins',sans-serif" font-size="11" fill="#6E6E75">
+            <text x="180" y="161">Inocente · Explorador</text>
+            <text x="180" y="177">· Sabio</text>
+            <text x="360" y="161">Cuidador · Creador</text>
+            <text x="360" y="177">· Gobernante</text>
+            <text x="180" y="341">Héroe · Forajido</text>
+            <text x="180" y="357">· Mago</text>
+            <text x="360" y="341">H. común · Amante</text>
+            <text x="360" y="357">· Bufón</text>
+          </g>
+        </svg>
       </div>
     </div>
 
