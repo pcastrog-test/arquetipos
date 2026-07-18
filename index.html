@@ -79,7 +79,8 @@
   .facts span{ display:inline-flex; align-items:center; gap:7px; }
   .tick{ width:6px; height:6px; border-radius:50%; background:var(--yellow-dark); }
 
-  .blob-stack{ position:relative; aspect-ratio:1/1; }
+  .blob-stack{ position:relative; }
+  .blob-stack::before{ content:""; display:block; padding-bottom:100%; }
   .blob-stack .blob-bg{
     position:absolute; inset:6% 4% 6% 4%; background:var(--yellow-soft);
     border-radius:58% 42% 47% 53% / 45% 40% 60% 55%;
@@ -128,16 +129,18 @@
   @media (max-width:560px){ .steps{ grid-template-columns:1fr; } }
 
   /* ---------- Mapa de ejes ---------- */
-  .axes{ position:relative; aspect-ratio:1/1; max-width:460px; margin:0 auto; }
-  .axes .quad{ position:absolute; width:50%; height:50%; border:1px solid var(--line); background:#fff; }
+  .axes{ position:relative; max-width:460px; margin:0 auto; }
+  .axes .qgrid{ display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; }
+  .axes .quad{ position:relative; min-height:150px; border:1px solid var(--line); background:#fff; }
   .axes .quad span{
     position:absolute; inset:auto 12px 12px 12px; font-size:12.2px; color:var(--muted); line-height:1.45;
   }
   .axes .quad b{ display:block; font-family:"Playfair Display",serif; font-size:14.5px; color:var(--ink); margin-bottom:3px; }
-  .q1{ top:0; left:0; border-radius:20px 0 0 0; background:#FEFCF5; }
-  .q2{ top:0; right:0; border-radius:0 20px 0 0; }
-  .q3{ bottom:0; left:0; border-radius:0 0 0 20px; }
-  .q4{ bottom:0; right:0; border-radius:0 0 20px 0; background:#FEFCF5; }
+  .q1{ border-radius:20px 0 0 0; background:#FEFCF5; }
+  .q2{ border-radius:0 20px 0 0; }
+  .q3{ border-radius:0 0 0 20px; }
+  .q4{ border-radius:0 0 20px 0; background:#FEFCF5; }
+  @media (max-width:420px){ .axes .quad{ min-height:128px; } }
   .axis-label{
     position:absolute; font-size:11.5px; font-weight:600; letter-spacing:.07em;
     text-transform:uppercase; color:var(--amber-text); white-space:nowrap;
@@ -370,26 +373,28 @@
         <div class="axis-label al-bottom">Riesgo / Maestría</div>
         <div class="axis-label al-left">Independencia</div>
         <div class="axis-label al-right">Pertenencia</div>
-        <div class="quad q1"><span><b>El anhelo del paraíso</b>Inocente · Explorador · Sabio</span></div>
-        <div class="quad q2"><span><b>Dar estructura al mundo</b>Cuidador · Creador · Gobernante</span></div>
-        <div class="quad q3"><span><b>Dejar huella en el mundo</b>Héroe · Forajido · Mago</span></div>
-        <div class="quad q4"><span><b>Nadie es una isla</b>H. común · Amante · Bufón</span></div>
+        <div class="qgrid">
+          <div class="quad q1"><span><b>El anhelo del paraíso</b>Inocente · Explorador · Sabio</span></div>
+          <div class="quad q2"><span><b>Dar estructura al mundo</b>Cuidador · Creador · Gobernante</span></div>
+          <div class="quad q3"><span><b>Dejar huella en el mundo</b>Héroe · Forajido · Mago</span></div>
+          <div class="quad q4"><span><b>Nadie es una isla</b>H. común · Amante · Bufón</span></div>
+        </div>
       </div>
     </div>
 
     <div class="arch-grid">
-      <div class="arch"><img src="img/innocent.jpg" loading="lazy" width="800" height="800" alt="El Inocente"><b>El Inocente</b><small>Seguridad</small></div>
-      <div class="arch"><img src="img/explorer.jpg" loading="lazy" width="800" height="800" alt="El Explorador"><b>El Explorador</b><small>Libertad</small></div>
-      <div class="arch"><img src="img/sage.jpg" loading="lazy" width="800" height="800" alt="El Sabio"><b>El Sabio</b><small>Comprensión</small></div>
-      <div class="arch"><img src="img/hero.jpg" loading="lazy" width="800" height="800" alt="El Héroe"><b>El Héroe</b><small>Maestría</small></div>
-      <div class="arch"><img src="img/outlaw.jpg" loading="lazy" width="800" height="800" alt="El Forajido"><b>El Forajido</b><small>Liberación</small></div>
-      <div class="arch"><img src="img/magician.jpg" loading="lazy" width="800" height="800" alt="El Mago"><b>El Mago</b><small>Poder</small></div>
-      <div class="arch"><img src="img/regular.jpg" loading="lazy" width="800" height="800" alt="El Hombre común"><b>H. Común</b><small>Pertenencia</small></div>
-      <div class="arch"><img src="img/lover.jpg" loading="lazy" width="800" height="800" alt="El Amante"><b>El Amante</b><small>Intimidad</small></div>
-      <div class="arch"><img src="img/jester.jpg" loading="lazy" width="800" height="800" alt="El Bufón"><b>El Bufón</b><small>Disfrute</small></div>
-      <div class="arch"><img src="img/caregiver.jpg" loading="lazy" width="800" height="800" alt="El Cuidador"><b>El Cuidador</b><small>Servicio</small></div>
-      <div class="arch"><img src="img/creator.jpg" loading="lazy" width="800" height="800" alt="El Creador"><b>El Creador</b><small>Innovación</small></div>
-      <div class="arch"><img src="img/ruler.jpg" loading="lazy" width="800" height="800" alt="El Gobernante"><b>El Gobernante</b><small>Control</small></div>
+      <div class="arch"><img src="img/innocent.jpg" loading="lazy" alt="El Inocente"><b>El Inocente</b><small>Seguridad</small></div>
+      <div class="arch"><img src="img/explorer.jpg" loading="lazy" alt="El Explorador"><b>El Explorador</b><small>Libertad</small></div>
+      <div class="arch"><img src="img/sage.jpg" loading="lazy" alt="El Sabio"><b>El Sabio</b><small>Comprensión</small></div>
+      <div class="arch"><img src="img/hero.jpg" loading="lazy" alt="El Héroe"><b>El Héroe</b><small>Maestría</small></div>
+      <div class="arch"><img src="img/outlaw.jpg" loading="lazy" alt="El Forajido"><b>El Forajido</b><small>Liberación</small></div>
+      <div class="arch"><img src="img/magician.jpg" loading="lazy" alt="El Mago"><b>El Mago</b><small>Poder</small></div>
+      <div class="arch"><img src="img/regular.jpg" loading="lazy" alt="El Hombre común"><b>H. Común</b><small>Pertenencia</small></div>
+      <div class="arch"><img src="img/lover.jpg" loading="lazy" alt="El Amante"><b>El Amante</b><small>Intimidad</small></div>
+      <div class="arch"><img src="img/jester.jpg" loading="lazy" alt="El Bufón"><b>El Bufón</b><small>Disfrute</small></div>
+      <div class="arch"><img src="img/caregiver.jpg" loading="lazy" alt="El Cuidador"><b>El Cuidador</b><small>Servicio</small></div>
+      <div class="arch"><img src="img/creator.jpg" loading="lazy" alt="El Creador"><b>El Creador</b><small>Innovación</small></div>
+      <div class="arch"><img src="img/ruler.jpg" loading="lazy" alt="El Gobernante"><b>El Gobernante</b><small>Control</small></div>
     </div>
 
     <!-- ---- Precisión: no son "los 12 arquetipos de Jung" ---- -->
